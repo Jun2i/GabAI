@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Personalized Care Guidance - GabAI{% endblock %}
+{% block page_title %}Personalized Care Guidance{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+
+    {% if not is_approved %}
+    <!-- Pending Approval Warning Banner -->
+    <div class="alert alert-warning border-warning d-flex align-items-center gap-3 p-4 mb-4 shadow-sm" role="alert">
+      <div class="stat-icon amber" style="width: 50px; height: 50px;">
+        <i class="fa-solid fa-hourglass-half"></i>
+      </div>
+      <div>
+        <h5 class="fw-bold mb-1 text-dark">Clinical Review In Progress</h5>
+        <p class="mb-0 text-secondary" style="font-size: 0.9rem;">
+          This recommendation was formulated by our AI system and is currently undergoing review by an attending physician.
+          <strong>To protect patient safety, AI recommendations are not active clinical care guidance until signed off by a licensed doctor.</strong>
+        </p>
+      </div>
+    </div>
+    {% else %}
+    <!-- Approved Care Plan Banner -->
+    <div class="mc-card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #E6F4EA, #FFFFFF);">
+      <div class="mc-card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon green" style="width: 54px; height: 54px; font-size: 1.5rem;">
+              <i class="fa-solid fa-file-circle-check"></i>
+            </div>
+            <div>
+              <span class="badge badge-status-approved mb-1">
+                <i class="fa-solid fa-user-doctor me-1"></i> Physician Approved & Authorized
+              </span>
+              <h3 class="fw-bold text-dark mb-0">{{ recommendation.title }}</h3>
+              <div class="text-muted" style="font-size: 0.85rem;">
+                Authorized by Dr. {{ recommendation.approved_by.user.get_full_name }} &bull; Approved on {{ recommendation.approved_at|date:"F d, Y" }}
+              </div>
+            </div>
+          </div>
+          <div>
+            <a href="{% url 'reports:recommendation_report' recommendation.id %}" target="_blank" class="btn btn-outline-secondary">
+              <i class="fa-solid fa-print me-1"></i> Print Care Guidance
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Guidance Overview Card -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Clinical Care Plan Summary</h5>
+        <span class="badge bg-light text-secondary border">Version {{ recommendation.current_version }}</span>
+      </div>
+      <div class="mc-card-body p-4">
+        <p class="text-secondary mb-4" style="font-size: 1.05rem; line-height: 1.7;">
+          {{ recommendation.summary_content }}
+        </p>
+
+        {% if recommendation.follow_up_guidance %}
+        <div class="p-3 bg-light rounded border-start border-4 border-success mb-4">
+          <h6 class="fw-bold text-success mb-1">
+            <i class="fa-solid fa-comment-medical me-1"></i> Physician Follow-Up Instructions:
+          </h6>
+          <p class="text-dark mb-0" style="font-size: 0.95rem;">
+            {{ recommendation.follow_up_guidance }}
+          </p>
+        </div>
+        {% endif %}
+
+        {% if recommendation.coping_strategies %}
+        <h6 class="fw-bold text-dark mb-3">Targeted Supportive Coping Strategies:</h6>
+        <div class="row g-2 mb-4">
+          {% for strat in recommendation.coping_strategies %}
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light h-100 d-flex align-items-start gap-2">
+              <i class="fa-solid fa-circle-check text-success mt-1"></i>
+              <span style="font-size: 0.9rem;">{{ strat }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if recommendation.preventive_strategies %}
+        <h6 class="fw-bold text-dark mb-3">Preventive Lifestyle & Wellness Recommendations:</h6>
+        <ul class="list-group list-group-flush border rounded mb-4" style="font-size: 0.9rem;">
+          {% for p in recommendation.preventive_strategies %}
+          <li class="list-group-item d-flex align-items-center gap-2">
+            <i class="fa-solid fa-heart-pulse text-primary"></i>
+            <span>{{ p }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="clinical-disclaimer-box">
+          <div class="d-flex align-items-start gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-primary mt-1"></i>
+            <div>
+              <strong>CLINICAL SAFETY ADVISORY:</strong>
+              {{ recommendation.contraindication_disclaimer }}
+              Never discontinue or adjust prescribed psychiatric medication without consulting your attending doctor.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Active Daily Schedule from Recommendation -->
+    {% if schedule %}
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">Daily Wellness Schedule</h5>
+          <div class="text-muted" style="font-size: 0.85rem;">Personalized daily routine structured for mood stability and circadian rhythm</div>
+        </div>
+        <a href="{% url 'wellness:schedule' %}" class="btn btn-sm btn-mc-primary">
+          <i class="fa-solid fa-calendar-check me-1"></i> Open Interactive Activity Tracker
+        </a>
+      </div>
+      <div class="mc-card-body p-4">
+        <div class="row g-3">
+          {% for act in activities %}
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-white h-100 shadow-sm">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-light text-primary border fw-semibold">
+                  <i class="fa-regular fa-clock me-1"></i> {{ act.start_time|time:"h:i A"|default:"Anytime" }}
+                </span>
+                <span class="badge {% if act.status == 'COMPLETED' %}bg-success{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                  {{ act.get_status_display }}
+                </span>
+              </div>
+              <h6 class="fw-bold text-dark mb-1">{{ act.title }}</h6>
+              <p class="text-muted mb-2" style="font-size: 0.825rem;">{{ act.description }}</p>
+              <div class="text-secondary" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-bullseye me-1"></i> <em>Purpose:</em> {{ act.purpose }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+

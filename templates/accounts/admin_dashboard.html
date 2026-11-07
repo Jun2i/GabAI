@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Portal - GabAI{% endblock %}
+{% block page_title %}System Administration & Governance{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Total Users</div>
+        <div class="stat-number text-dark">{{ total_users }}</div>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-users"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Registered Patients</div>
+        <div class="stat-number text-dark">{{ patients_count }}</div>
+      </div>
+      <div class="stat-icon blue">
+        <i class="fa-solid fa-hospital-user"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Medical Physicians</div>
+        <div class="stat-number text-dark">{{ total_physicians_count }}</div>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-user-doctor"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Unverified Licenses</div>
+        <div class="stat-number text-danger">{{ unverified_count }}</div>
+      </div>
+      <div class="stat-icon amber">
+        <i class="fa-solid fa-id-card-clip"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Physician Verification Table (10 Items per Page) -->
+<div class="mc-card mb-4 shadow-sm">
+  <div class="mc-card-header d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <h6 class="fw-bold mb-0">Physician Credential Verification (PRC Registry)</h6>
+      <span class="badge bg-light text-secondary border">Role Governance</span>
+    </div>
+    <span class="badge bg-light text-secondary border">Showing {{ physicians.start_index }}-{{ physicians.end_index }} of {{ paginator.count }}</span>
+  </div>
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Doctor Name</th>
+            <th>PRC License</th>
+            <th>Specialization</th>
+            <th>Hospital Affiliation</th>
+            <th>Verification Status</th>
+            <th class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in physicians %}
+          <tr>
+            <td class="ps-4">
+              <strong>Dr. {{ p.user.get_full_name|default:p.user.username }}</strong>
+              <div class="text-muted" style="font-size: 0.75rem;">{{ p.user.email }}</div>
+            </td>
+            <td><code>{{ p.license_number }}</code></td>
+            <td>{{ p.specialization }}</td>
+            <td>{{ p.hospital_affiliation|default:"Private Clinic" }}</td>
+            <td>
+              {% if p.is_verified %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                <i class="fa-solid fa-check-circle me-1"></i> Verified & Active
+              </span>
+              {% else %}
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                <i class="fa-solid fa-hourglass-half me-1"></i> Awaiting Verification
+              </span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4">
+              <a href="{% url 'accounts:verify_physician' p.id %}" class="btn btn-sm {% if p.is_verified %}btn-outline-danger{% else %}btn-success{% endif %}">
+                {% if p.is_verified %}
+                  <i class="fa-solid fa-ban me-1"></i> Revoke
+                {% else %}
+                  <i class="fa-solid fa-user-check me-1"></i> Verify Credentials
+                {% endif %}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Clean Pagination Footer Controls (10 items per page) -->
+    {% if paginator.num_pages > 1 %}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top bg-light">
+      <div class="text-muted mb-2 mb-md-0" style="font-size: 0.8rem;">
+        Showing page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong> &bull; Total <strong>{{ paginator.count }}</strong> physicians (10 per page)
+      </div>
+      <nav aria-label="Physician table pagination">
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1" aria-label="First">
+              <i class="fa-solid fa-angles-left"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+              <i class="fa-solid fa-angle-left"></i> Previous
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i> Previous</span></li>
+          {% endif %}
+
+          {% for p in paginator.page_range %}
+            {% if p == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+            {% elif p > page_obj.number|add:-3 and p < page_obj.number|add:3 %}
+            <li class="page-item"><a class="page-link" href="?page={{ p }}">{{ p }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+              Next <i class="fa-solid fa-angle-right"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
+              <i class="fa-solid fa-angles-right"></i>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">Next <i class="fa-solid fa-angle-right"></i></span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Audit Log Stream -->
+<div class="mc-card">
+  <div class="mc-card-header d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <h6 class="fw-bold mb-0">Recent System Activity Audit Logs</h6>
+      <span class="badge bg-light text-secondary border">Latest 10 Events</span>
+    </div>
+    <a href="{% url 'reports:audit_logs' %}" class="btn btn-sm btn-outline-secondary">View All Logs</a>
+  </div>
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in audit_logs %}
+          <tr>
+            <td class="ps-4 text-nowrap text-secondary">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+            <td><strong>{{ log.user.username|default:"System" }}</strong></td>
+            <td><span class="badge bg-light text-dark border">{{ log.action }}</span></td>
+            <td>{{ log.entity_name|default:"-" }}</td>
+            <td class="text-truncate" style="max-width: 350px;">{{ log.details }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

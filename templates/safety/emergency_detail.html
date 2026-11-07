@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Case #{{ safety.id }} - GabAI{% endblock %}
+{% block page_title %}Clinical Emergency Intervention Hub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="fw-bold mb-0 text-danger">Emergency Safety Case #{{ safety.id }}</h4>
+        <div class="text-muted" style="font-size: 0.85rem;">
+          Patient: <strong>{{ patient.user.get_full_name }}</strong> (ID #{{ patient.id }}) &bull; Escalated: {{ safety.escalated_at|date:"M d, Y - h:i A" }}
+        </div>
+      </div>
+      <a href="{% url 'safety:management' %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-1"></i> Back to Safety Triage
+      </a>
+    </div>
+
+    <!-- Case Status Banner -->
+    <div class="mc-card mb-4 border-danger">
+      <div class="mc-card-header bg-danger-subtle border-danger d-flex justify-content-between align-items-center">
+        <span class="badge bg-danger text-white px-3 py-2">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ safety.get_urgency_level_display }}
+        </span>
+        <span class="badge bg-white text-danger border border-danger fw-bold">
+          Status: {{ safety.get_status_display }}
+        </span>
+      </div>
+
+      <div class="mc-card-body p-4">
+        
+        <!-- Detected Triggers Box -->
+        <div class="p-3 bg-light rounded border border-danger-subtle mb-4">
+          <h6 class="fw-bold text-danger mb-2">
+            <i class="fa-solid fa-flag me-1"></i> Specific Safety Triggers Detected During Assessment:
+          </h6>
+          <pre class="mb-0 text-dark font-monospace" style="white-space: pre-wrap; font-size: 0.9rem;">{{ safety.safety_triggers_detected }}</pre>
+        </div>
+
+        <!-- Emergency Contact Card -->
+        <div class="p-3 rounded border mb-4 bg-white shadow-sm">
+          <h6 class="fw-bold text-dark mb-3">
+            <i class="fa-solid fa-address-book text-primary me-2"></i> Patient & Emergency Contact Information
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <span class="text-muted d-block" style="font-size: 0.8rem;">Patient Direct Phone:</span>
+              <strong class="fs-6 text-dark">{{ patient.user.phone_number|default:"Not provided" }}</strong>
+            </div>
+            <div class="col-md-4">
+              <span class="text-muted d-block" style="font-size: 0.8rem;">Emergency Contact:</span>
+              <strong class="fs-6 text-dark">{{ emergency_contact.name|default:"Not specified" }}</strong>
+              <div class="text-secondary" style="font-size: 0.8rem;">({{ emergency_contact.relationship }})</div>
+            </div>
+            <div class="col-md-4">
+              <span class="text-muted d-block" style="font-size: 0.8rem;">Emergency Phone Number:</span>
+              <strong class="fs-6 text-danger">
+                <a href="tel:{{ emergency_contact.phone }}" class="text-danger text-decoration-none">
+                  <i class="fa-solid fa-phone me-1"></i> {{ emergency_contact.phone|default:"No phone" }}
+                </a>
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documented Actions Log -->
+        {% if safety.action_taken %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Documented Clinical Actions:</h6>
+          <div class="p-3 bg-light rounded border font-monospace text-secondary" style="font-size: 0.85rem; white-space: pre-wrap;">{{ safety.action_taken }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Clinical Action Documentation Form -->
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">
+              Record Clinical Intervention & Safety Plan Documentation: <span class="text-danger">*</span>
+            </label>
+            <textarea name="action_taken" rows="4" class="form-control" placeholder="Describe actions taken (e.g. called patient directly, contacted emergency contact, initiated mobile crisis team, scheduled urgent clinical evaluation, safety contract signed)..." required></textarea>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 justify-content-between pt-3 border-top">
+            <button type="submit" name="action" value="INITIATE_INTERVENTION" class="btn btn-warning px-4">
+              <i class="fa-solid fa-phone me-1"></i> Document Intervention Contact
+            </button>
+            <button type="submit" name="action" value="RESOLVE_EMERGENCY" class="btn btn-success btn-lg px-4" onclick="return confirm('Confirm that patient safety has been verified and this emergency protocol can be formally closed?');">
+              <i class="fa-solid fa-shield-check me-2"></i> Resolve & Document Safety Clearance
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

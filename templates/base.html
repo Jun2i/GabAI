@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GabAI: An AI-Driven Platform for Mental Health Monitoring and Personalized Recommendation System{% endblock %}</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom Healthcare Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Urgent Emergency Safety Alert Banner -->
+  {% if patient_has_safety_alert %}
+  <div class="emergency-alert-banner">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+      <span><strong>PRIORITY CLINICAL SAFETY NOTICE:</strong> An active safety alert has been recorded. Immediate professional support is available 24/7.</span>
+    </div>
+    <a href="{% url 'safety:crisis_resources' %}" class="btn btn-sm btn-light text-danger fw-bold">
+      <i class="fa-solid fa-phone-volume me-1"></i> View Crisis Helplines & Assistance
+    </a>
+  </div>
+  {% elif active_emergency_count > 0 and request.user.is_authenticated and not request.user.is_patient %}
+  <div class="emergency-alert-banner">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-bell-exclamation fa-beat fa-lg"></i>
+      <span><strong>CLINICAL EMERGENCY TRIAGE:</strong> {{ active_emergency_count }} active safety emergency cases require immediate human clinical intervention!</span>
+    </div>
+    <a href="{% url 'safety:management' %}" class="btn btn-sm btn-light text-danger fw-bold">
+      <i class="fa-solid fa-shield-heart me-1"></i> Review Emergency Triage ({{ active_emergency_count }})
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="app-wrapper">
+    {% if request.user.is_authenticated %}
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <a href="{% url 'accounts:dashboard_redirect' %}" class="sidebar-brand d-flex align-items-center gap-2">
+        <img src="/static/img/logo.png" alt="GabAI Logo" class="brand-logo-img" style="height: 42px; width: 42px; object-fit: contain; border-radius: 8px; background: #ffffff; padding: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);">
+        <div>
+          <span class="brand-text">Gab</span><span class="brand-badge">AI</span>
+          <div style="font-size: 0.65rem; color: #64748B; font-weight: 500;">Mental Health &amp; Recommendations</div>
+        </div>
+      </a>
+
+      <div class="sidebar-nav">
+        {% if request.user.is_patient %}
+          <!-- Patient Navigation -->
+          <div class="nav-section-title">Patient Portal</div>
+          <a href="{% url 'patients:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'patients' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-house-medical"></i> Dashboard
+          </a>
+          <a href="{% url 'assessments:intro' %}" class="nav-link {% if request.resolver_match.app_name == 'assessments' and request.resolver_match.url_name != 'history' %}active{% endif %}">
+            <i class="fa-solid fa-clipboard-check"></i> Take Assessment
+          </a>
+          <a href="{% url 'wellness:schedule' %}" class="nav-link {% if request.resolver_match.app_name == 'wellness' %}active{% endif %}">
+            <i class="fa-solid fa-calendar-day"></i> Daily Wellness Schedule
+          </a>
+          <a href="{% url 'appointments:list' %}" class="nav-link {% if request.resolver_match.app_name == 'appointments' %}active{% endif %}">
+            <i class="fa-solid fa-user-doctor"></i> My Appointments
+          </a>
+          <a href="{% url 'assessments:history' %}" class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}">
+            <i class="fa-solid fa-chart-line"></i> Screening History
+          </a>
+          <a href="{% url 'safety:crisis_resources' %}" class="nav-link text-danger {% if request.resolver_match.app_name == 'safety' %}active text-white bg-danger{% endif %}">
+            <i class="fa-solid fa-life-ring"></i> 24/7 Crisis Support
+          </a>
+
+        {% elif request.user.is_physician or request.user.is_healthcare_staff %}
+          <!-- Physician & Healthcare Staff Navigation -->
+          <div class="nav-section-title">Clinical Workspace</div>
+          <a href="{% url 'physicians:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'physicians' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-stethoscope"></i> Physician Dashboard
+          </a>
+          <a href="{% url 'safety:management' %}" class="nav-link {% if request.resolver_match.app_name == 'safety' %}active{% endif %}">
+            <i class="fa-solid fa-triangle-exclamation text-danger"></i> Safety Emergency Triage
+            {% if active_emergency_count > 0 %}
+              <span class="badge bg-danger ms-auto">{{ active_emergency_count }}</span>
+            {% endif %}
+          </a>
+          <a href="{% url 'appointments:list' %}" class="nav-link {% if request.resolver_match.app_name == 'appointments' %}active{% endif %}">
+            <i class="fa-solid fa-calendar-check"></i> Patient Appointments
+          </a>
+          <a href="{% url 'reports:analytics' %}" class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie"></i> Screening Analytics
+          </a>
+          <a href="{% url 'reports:audit_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+            <i class="fa-solid fa-book-medical"></i> Clinical Audit Logs
+          </a>
+        {% endif %}
+
+        {% if request.user.is_admin_user %}
+          <!-- Admin Navigation -->
+          <div class="nav-section-title">Administration</div>
+          <a href="{% url 'accounts:admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-user-shield"></i> Admin Portal
+          </a>
+          <a href="{% url 'reports:audit_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+            <i class="fa-solid fa-list-check"></i> System Logs
+          </a>
+          <a href="/admin/" target="_blank" class="nav-link">
+            <i class="fa-solid fa-gear"></i> Django Admin <i class="fa-solid fa-arrow-up-right-from-square ms-auto fa-xs"></i>
+          </a>
+        {% endif %}
+
+        <div class="nav-section-title mt-3">Account</div>
+        {% if request.user.is_patient %}
+        <a href="{% url 'patients:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+          <i class="fa-solid fa-user-gear"></i> Profile & Routine
+        </a>
+        {% endif %}
+        <a href="{% url 'notifications:list' %}" class="nav-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}">
+          <i class="fa-solid fa-bell"></i> Notifications
+          {% if unread_notifications_count > 0 %}
+          <span class="badge bg-primary ms-auto">{{ unread_notifications_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="d-flex align-items-center justify-content-between">
+          {% if request.user.is_patient %}
+          <a href="{% url 'patients:profile' %}" class="d-flex align-items-center gap-2 overflow-hidden text-decoration-none text-dark" title="Edit Profile & Routine Settings">
+            <div class="rounded-circle bg-light border p-2 text-primary" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="text-truncate">
+              <div class="fw-semibold text-truncate" style="font-size: 0.85rem;">{{ request.user.get_full_name|default:request.user.username }}</div>
+              <div class="text-muted" style="font-size: 0.725rem;">{{ request.user.get_role_display }}</div>
+            </div>
+          </a>
+          {% else %}
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <div class="rounded-circle bg-light border p-2 text-primary" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="text-truncate">
+              <div class="fw-semibold text-truncate" style="font-size: 0.85rem;">{{ request.user.get_full_name|default:request.user.username }}</div>
+              <div class="text-muted" style="font-size: 0.725rem;">{{ request.user.get_role_display }}</div>
+            </div>
+          </div>
+          {% endif %}
+          <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-secondary" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </a>
+        </div>
+      </div>
+    </aside>
+    {% endif %}
+
+    <!-- Main Workspace -->
+    <div class="main-content">
+      {% if request.user.is_authenticated %}
+      <!-- Top Navbar -->
+      <header class="top-navbar">
+        <div class="d-flex align-items-center gap-3">
+          <h5 class="mb-0 fw-bold text-dark">{% block page_title %}Dashboard{% endblock %}</h5>
+          <span class="badge bg-light text-secondary border">RA 10173 Compliant</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <!-- Notification Dropdown -->
+          <div class="dropdown">
+            <button class="btn btn-light rounded-circle position-relative p-2" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
+              <i class="fa-regular fa-bell text-secondary"></i>
+              {% if unread_notifications_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span class="visually-hidden">New alerts</span>
+              </span>
+              {% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="width: 320px;">
+              <li class="dropdown-header d-flex justify-content-between align-items-center py-2">
+                <span class="fw-bold">Notifications</span>
+                {% if unread_notifications_count > 0 %}
+                <a href="{% url 'notifications:mark_all_read' %}" class="text-decoration-none" style="font-size: 0.75rem;">Mark all read</a>
+                {% endif %}
+              </li>
+              <li><hr class="dropdown-divider my-0"></li>
+              {% if unread_notifications %}
+                {% for n in unread_notifications %}
+                <li>
+                  <a class="dropdown-item py-2 px-3 border-bottom text-wrap" href="{% url 'notifications:mark_read' n.id %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <strong class="text-dark" style="font-size: 0.85rem;">{{ n.title }}</strong>
+                      {% if n.is_urgent %}<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Urgent</span>{% endif %}
+                    </div>
+                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">{{ n.message|truncatewords:10 }}</p>
+                    <small class="text-secondary" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</small>
+                  </a>
+                </li>
+                {% endfor %}
+              {% else %}
+                <li class="p-3 text-center text-muted" style="font-size: 0.85rem;">No unread notifications</li>
+              {% endif %}
+              <li>
+                <a class="dropdown-item text-center py-2 text-primary fw-medium" style="font-size: 0.8rem;" href="{% url 'notifications:list' %}">
+                  View Notification Center <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- User Menu -->
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if request.user.is_physician %}bg-success{% elif request.user.is_admin_user %}bg-dark{% else %}bg-primary{% endif %} text-white">
+              {{ request.user.get_role_display }}
+            </span>
+          </div>
+        </div>
+      </header>
+      {% endif %}
+
+      <!-- Alerts / Django Messages -->
+      {% if messages %}
+      <div class="container-fluid pt-3 px-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+          <div class="d-flex align-items-center gap-2">
+            {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check text-success"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}<i class="fa-solid fa-circle-exclamation text-danger"></i>
+            {% elif message.tags == 'warning' %}<i class="fa-solid fa-triangle-exclamation text-warning"></i>
+            {% else %}<i class="fa-solid fa-circle-info text-info"></i>{% endif %}
+            <div>{{ message }}</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Main Body Content -->
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+
+      <!-- Standard Medical Disclaimer Footer -->
+      <footer class="py-3 px-4 bg-white border-top text-center text-muted" style="font-size: 0.75rem;">
+        <div class="container-fluid">
+          <div class="row align-items-center">
+            <div class="col-md-6 text-md-start mb-2 mb-md-0">
+              <strong>GabAI</strong> &copy; 2026. An AI-Driven Platform for Mental Health Monitoring and Personalized Recommendation System.
+              Compliant with RA 10173 (Philippine Data Privacy Act).
+            </div>
+            <div class="col-md-6 text-md-end">
+              <span class="text-secondary">
+                <i class="fa-solid fa-shield-halved me-1"></i>
+                <strong>Notice:</strong> AI outputs are non-diagnostic and require licensed physician approval prior to release.
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Floating AI Chatbot Action Button & Window -->
+  <div class="mc-chatbot-container no-print">
+    <!-- Floating Action Button (Bottom Right) -->
+    <button type="button" class="mc-chatbot-fab" id="chatbotFab" title="Open GabAI Assistant" aria-label="Open GabAI Assistant">
+      <div class="pulse-ring"></div>
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+      <span class="fab-badge">AI</span>
+    </button>
+
+    <!-- Chatbot Window -->
+    <div class="mc-chatbot-window" id="chatbotWindow" role="dialog" aria-labelledby="chatbotTitle">
+      <!-- Header -->
+      <div class="mc-chatbot-header">
+        <div class="mc-chatbot-title">
+          <div class="mc-chatbot-avatar" style="background: #ffffff; padding: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            <img src="/static/img/logo.png" alt="GabAI Logo" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold text-white" id="chatbotTitle" style="font-size: 0.95rem;">GabAI Assistant</h6>
+            <div style="font-size: 0.72rem; color: rgba(255, 255, 255, 0.85);">
+              <span class="mc-chatbot-status-dot"></span>Active • Clinical Support
+            </div>
+          </div>
+        </div>
+        <div class="mc-chatbot-actions">
+          <button type="button" id="chatbotClearBtn" title="Clear Chat" aria-label="Clear Chat">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+          <button type="button" id="chatbotMinimizeBtn" title="Minimize" aria-label="Minimize">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+          <button type="button" id="chatbotCloseBtn" title="Close" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Emergency Crisis Notice Strip -->
+      <div class="mc-chatbot-notice">
+        <div>
+          <i class="fa-solid fa-shield-heart me-1 text-danger"></i>
+          In immediate crisis? Call <strong>1553</strong> (24/7)
+        </div>
+        <a href="{% url 'safety:crisis_resources' %}" target="_blank">Helplines &rarr;</a>
+      </div>
+
+      <!-- Messages Body -->
+      <div class="mc-chatbot-body" id="chatbotMessages">
+        <!-- Initial Welcome Message -->
+        <div class="mc-chat-msg bot">
+          <div class="mc-chat-avatar-sm"><i class="fa-solid fa-robot"></i></div>
+          <div class="mc-chat-bubble">
+            <p class="mb-2">
+              👋 <strong>Hello{% if request.user.is_authenticated and request.user.first_name %}, {{ request.user.first_name }}{% endif %}!</strong>
+              I'm your <strong>GabAI Assistant</strong>.
+            </p>
+            <p class="mb-2" style="font-size: 0.825rem; color: #475569;">
+              I can help guide you through relaxation & breathing exercises, explain your screening results,
+              assist with your daily wellness routine, or help you connect with our medical staff.
+            </p>
+            <div class="mc-chat-chips">
+              <button type="button" class="mc-chip-btn" data-prompt="Can you guide me through a calming breathing exercise?">
+                🧘 Breathing Exercise
+              </button>
+              <button type="button" class="mc-chip-btn" data-prompt="I am feeling anxious and overwhelmed today.">
+                🌿 Feeling Anxious
+              </button>
+              <button type="button" class="mc-chip-btn" data-prompt="How does the 6-domain mental health screening assessment work?">
+                📋 Screening Guide
+              </button>
+              <button type="button" class="mc-chip-btn" data-prompt="How do doctors review and approve recommendations?">
+                🩺 Doctor Approval
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Input Area -->
+      <div class="mc-chatbot-footer">
+        <div class="mc-chatbot-input-row">
+          <input type="text" class="mc-chatbot-input" id="chatbotInput" placeholder="Ask GabAI anything..." autocomplete="off">
+          <button type="button" class="mc-chatbot-send-btn" id="chatbotSendBtn" title="Send message" aria-label="Send message">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        <div class="mc-chatbot-footnote">
+          <i class="fa-solid fa-shield-halved me-1"></i> Non-diagnostic support. All recommendations supervised by physicians.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3 Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Custom Healthcare JS -->
+  <script src="/static/js/main.js"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - GabAI{% endblock %}
+{% block page_title %}Patient Wellness & Care Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome & Quick Action Banner -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="mc-card border-0 shadow-sm" style="background: linear-gradient(135deg, #E6F4EA 0%, #FFFFFF 100%);">
+      <div class="mc-card-body p-4 p-md-5">
+        <div class="row align-items-center">
+          <div class="col-lg-8">
+            <span class="badge bg-white text-success border px-3 py-1 rounded-pill fw-semibold mb-2">
+              <i class="fa-solid fa-seedling me-1"></i> GabAI Wellness Portal
+            </span>
+            <h2 class="fw-bold text-dark mb-2">Hello, {{ patient.user.first_name|default:patient.user.username }}!</h2>
+            <p class="text-secondary mb-4" style="line-height: 1.6;">
+              Welcome to your personal mental health and wellness management space. Complete regular screenings, follow physician-authorized guidance, and track your daily wellness routine.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{% url 'assessments:start' %}" class="btn btn-mc-primary px-4 py-2">
+                <i class="fa-solid fa-clipboard-check me-2"></i> Take Screening Assessment
+              </a>
+              <a href="{% url 'wellness:schedule' %}" class="btn btn-mc-outline-green px-3 py-2">
+                <i class="fa-solid fa-calendar-day me-1"></i> View Today's Schedule
+              </a>
+              <a href="{% url 'appointments:request' %}" class="btn btn-outline-secondary px-3 py-2">
+                <i class="fa-solid fa-user-doctor me-1"></i> Book Consultation
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-4 text-center d-none d-lg-block">
+            <div class="p-3 bg-white rounded-circle shadow-sm d-inline-block">
+              <i class="fa-solid fa-shield-heart text-success" style="font-size: 4.5rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  
+  <!-- Left Column: Active Approved Guidance & Schedule Tracker -->
+  <div class="col-lg-8">
+    
+    <!-- Active Care Guidance Card (PHYSICIAN APPROVED ONLY) -->
+    <div class="mc-card mb-4 border-success-subtle">
+      <div class="mc-card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0 text-dark">Active Physician-Authorized Care Plan</h5>
+          <div class="text-muted" style="font-size: 0.8rem;">Personalized guidance approved by your attending doctor</div>
+        </div>
+        {% if approved_recommendation %}
+        <span class="badge badge-status-approved">
+          <i class="fa-solid fa-check-circle me-1"></i> Doctor Approved
+        </span>
+        {% else %}
+        <span class="badge badge-status-pending">Under Review</span>
+        {% endif %}
+      </div>
+
+      <div class="mc-card-body p-4">
+        {% if approved_recommendation %}
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <div class="stat-icon green" style="width: 46px; height: 46px;">
+              <i class="fa-solid fa-notes-medical"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold text-dark mb-1">{{ approved_recommendation.title }}</h5>
+              <p class="text-secondary mb-2" style="font-size: 0.925rem; line-height: 1.6;">
+                {{ approved_recommendation.summary_content|truncatewords:45 }}
+              </p>
+              <div class="text-muted" style="font-size: 0.8rem;">
+                Authorized by <strong>Dr. {{ approved_recommendation.approved_by.user.get_full_name }}</strong> on {{ approved_recommendation.approved_at|date:"M d, Y" }}
+              </div>
+            </div>
+          </div>
+
+          {% if approved_recommendation.follow_up_guidance %}
+          <div class="p-3 bg-light rounded border-start border-3 border-success mb-3" style="font-size: 0.875rem;">
+            <strong class="text-success"><i class="fa-solid fa-comment-dots me-1"></i> Doctor's Note:</strong>
+            {{ approved_recommendation.follow_up_guidance }}
+          </div>
+          {% endif %}
+
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <a href="{% url 'recommendations:patient_view' approved_recommendation.id %}" class="btn btn-sm btn-mc-primary">
+              <i class="fa-solid fa-file-lines me-1"></i> View Complete Care Guidance
+            </a>
+            <a href="{% url 'reports:recommendation_report' approved_recommendation.id %}" target="_blank" class="text-secondary text-decoration-none" style="font-size: 0.8rem;">
+              <i class="fa-solid fa-print me-1"></i> Print Plan
+            </a>
+          </div>
+
+        {% else %}
+          <!-- No approved recommendation yet -->
+          <div class="text-center py-4">
+            <div class="stat-icon amber mx-auto mb-2" style="width: 50px; height: 50px;">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <h6 class="fw-bold text-dark mb-1">No Active Approved Care Plan</h6>
+            <p class="text-muted mb-3" style="font-size: 0.85rem; max-width: 480px; margin: 0 auto;">
+              {% if latest_assessment %}
+                Your recent assessment #{{ latest_assessment.id }} is being evaluated by an attending physician.
+                Once approved, your authorized personalized guidance will appear here.
+              {% else %}
+                Take a screening assessment to receive AI-assisted wellness recommendations that your physician can review and approve.
+              {% endif %}
+            </p>
+            {% if not latest_assessment %}
+            <a href="{% url 'assessments:start' %}" class="btn btn-sm btn-mc-primary">
+              <i class="fa-solid fa-clipboard-check me-1"></i> Start Screening Assessment
+            </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Today's Scheduled Wellness Activities -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">Today's Daily Wellness Routine</h5>
+          <div class="text-muted" style="font-size: 0.8rem;">{{ today|date:"l, F d, Y" }} &bull; {{ completion_rate }}% Completed</div>
+        </div>
+        <a href="{% url 'wellness:schedule' %}" class="btn btn-sm btn-outline-secondary">
+          Full Schedule <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+
+      <div class="mc-card-body p-4">
+        {% if today_activities %}
+        <div class="row g-2">
+          {% for act in today_activities %}
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-white h-100 d-flex justify-content-between align-items-center {% if act.status == 'COMPLETED' %}bg-light border-success{% endif %}">
+              <div>
+                <span class="badge bg-light text-primary border mb-1" style="font-size: 0.7rem;">
+                  <i class="fa-regular fa-clock me-1"></i> {{ act.start_time|time:"h:i A" }}
+                </span>
+                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">{{ act.title }}</h6>
+                <small class="text-muted" style="font-size: 0.75rem;">{{ act.get_category_display }}</small>
+              </div>
+
+              <div>
+                {% if act.status == 'COMPLETED' %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle p-2">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+                {% else %}
+                <form method="post" action="{% url 'wellness:update_activity' act.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="COMPLETED">
+                  <button type="submit" class="btn btn-sm btn-outline-success rounded-circle p-2" title="Mark Done" style="width: 34px; height: 34px;">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-3 text-muted" style="font-size: 0.85rem;">
+          No routine activities scheduled for today. Complete an assessment to generate your personalized wellness schedule.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right Column: Screening History, Appointments & Notifications -->
+  <div class="col-lg-4">
+    
+    <!-- Latest Assessment Status Card -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Latest Screening Assessment</h6>
+        {% if latest_assessment %}
+        <span class="badge bg-light text-muted border">#{{ latest_assessment.id }}</span>
+        {% endif %}
+      </div>
+      <div class="mc-card-body p-3">
+        {% if latest_assessment %}
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted" style="font-size: 0.85rem;">Submitted Date:</span>
+            <strong>{{ latest_assessment.created_at|date:"M d, Y" }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted" style="font-size: 0.85rem;">PHQ-9 Depression:</span>
+            <strong>{{ latest_assessment.phq9_score|default:"0" }}/9</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted" style="font-size: 0.85rem;">GAD-7 Anxiety:</span>
+            <strong>{{ latest_assessment.gad7_score|default:"0" }}/9</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+            <span class="text-muted" style="font-size: 0.85rem;">Safety Screening:</span>
+            {% if latest_assessment.has_safety_flag %}
+            <span class="badge bg-danger">Safety Alert Flagged</span>
+            {% else %}
+            <span class="badge bg-success-subtle text-success">Cleared</span>
+            {% endif %}
+          </div>
+
+          <a href="{% url 'assessments:summary' latest_assessment.id %}" class="btn btn-sm btn-outline-primary w-100">
+            <i class="fa-solid fa-chart-simple me-1"></i> View Screening Results & Charts
+          </a>
+        {% else %}
+          <div class="text-center py-3 text-muted" style="font-size: 0.85rem;">
+            No assessment on file.
+            <div class="mt-2">
+              <a href="{% url 'assessments:start' %}" class="btn btn-sm btn-mc-primary">Take Assessment</a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Upcoming Appointments & Consultations -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Upcoming Consultations</h6>
+        <a href="{% url 'appointments:request' %}" class="btn btn-sm btn-outline-success" title="Request Appointment">
+          <i class="fa-solid fa-plus"></i>
+        </a>
+      </div>
+      <div class="mc-card-body p-3">
+        {% for apt in upcoming_appointments %}
+        <div class="p-2 border rounded mb-2 bg-light d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
+          <div>
+            <strong>{{ apt.appointment_date|date:"M d, Y" }}</strong> &bull; {{ apt.start_time|time:"h:i A" }}
+            <div class="text-muted" style="font-size: 0.75rem;">
+              Dr. {{ apt.physician.user.get_full_name }} &bull; {{ apt.get_consultation_mode_display }}
+            </div>
+          </div>
+          <span class="badge {% if apt.status == 'CONFIRMED' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ apt.get_status_display }}
+          </span>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-2 mb-0" style="font-size: 0.85rem;">No upcoming appointments.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 24/7 Crisis Help Quick Card -->
+    <div class="p-3 rounded border border-danger-subtle bg-danger-subtle bg-opacity-25 text-center">
+      <i class="fa-solid fa-phone-volume text-danger fa-2x mb-2"></i>
+      <h6 class="fw-bold text-danger mb-1">Need Urgent Help?</h6>
+      <p class="text-secondary mb-2" style="font-size: 0.8rem;">
+        If you are experiencing severe distress or crisis, human support is available 24/7.
+      </p>
+      <a href="{% url 'safety:crisis_resources' %}" class="btn btn-sm btn-danger w-100 fw-bold">
+        <i class="fa-solid fa-life-ring me-1"></i> Access Crisis Hotlines (Dial 1553)
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Full-Width Care Plan Status Registry (Comprehensive Details & 10 per Page) -->
+<div class="row g-4 mt-1">
+  <div class="col-12">
+    <div class="mc-card shadow-sm border-0">
+      <div class="mc-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center p-3 bg-white border-bottom gap-2">
+        <div>
+          <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-clipboard-list text-success me-2"></i>Care Plan Status Registry</h5>
+          <div class="text-muted" style="font-size: 0.825rem;">Comprehensive overview of your mental health care recommendations, physician review statuses, and clinical screening scores</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-secondary border px-3 py-2">
+            Showing {{ recommendations.start_index }}-{{ recommendations.end_index }} of {{ total_recs_count }} Records
+          </span>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4 py-3" style="min-width: 280px;">Care Plan &amp; Screening Reference</th>
+                <th class="py-3" style="min-width: 180px;">Pathway</th>
+                <th class="py-3" style="min-width: 170px;">Assessment Scores</th>
+                <th class="py-3" style="min-width: 200px;">Physician Review Status</th>
+                <th class="text-end pe-4 py-3" style="min-width: 200px;">Actions &amp; Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in recommendations %}
+              <tr>
+                <td class="ps-4 py-3">
+                  <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">{{ rec.title }}</div>
+                  <div class="d-flex flex-wrap align-items-center gap-2" style="font-size: 0.775rem;">
+                    <span class="badge bg-light text-dark border">Plan #{{ rec.id }}</span>
+                    <span class="badge bg-light text-secondary border">Assessment #{{ rec.assessment.id }}</span>
+                    <span class="text-muted"><i class="fa-regular fa-calendar me-1"></i>{{ rec.created_at|date:"M d, Y" }}</span>
+                  </div>
+                </td>
+                <td class="py-3">
+                  {% if rec.pathway == 'PATHWAY_B' %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                    <i class="fa-solid fa-notes-medical me-1"></i> Pathway B: Symptom-Specific
+                  </span>
+                  {% else %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="fa-solid fa-leaf me-1"></i> Pathway A: Preventive
+                  </span>
+                  {% endif %}
+                </td>
+                <td class="py-3">
+                  <div class="d-flex flex-column gap-1" style="font-size: 0.775rem;">
+                    <div><strong>PHQ-9:</strong> {{ rec.assessment.phq9_score|default:"0" }}/27 <span class="badge bg-light text-secondary border py-0">{{ rec.assessment.phq9_severity|default:"Minimal" }}</span></div>
+                    <div><strong>GAD-7:</strong> {{ rec.assessment.gad7_score|default:"0" }}/21 <span class="badge bg-light text-secondary border py-0">{{ rec.assessment.gad7_severity|default:"Minimal" }}</span></div>
+                    <div>
+                      <strong>Safety:</strong>
+                      {% if rec.assessment.has_safety_flag %}
+                      <span class="badge bg-danger py-0">Flagged</span>
+                      {% else %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle py-0">Cleared</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3">
+                  <div class="mb-1">
+                    {% if rec.status == 'APPROVED' %}
+                    <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                      <i class="fa-solid fa-check-circle me-1"></i> Approved by Physician
+                    </span>
+                    {% elif rec.status == 'MODIFIED_AND_APPROVED' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1">
+                      <i class="fa-solid fa-user-pen me-1"></i> Modified &amp; Approved
+                    </span>
+                    {% elif rec.status == 'PENDING_APPROVAL' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">
+                      <i class="fa-solid fa-clock me-1"></i> Pending Physician Review
+                    </span>
+                    {% elif rec.status == 'REJECTED' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1">
+                      <i class="fa-solid fa-ban me-1"></i> Rejected by Physician
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                      {{ rec.get_status_display }}
+                    </span>
+                    {% endif %}
+                  </div>
+                  <div style="font-size: 0.8rem;">
+                    {% if rec.approved_by %}
+                    <strong>Dr. {{ rec.approved_by.user.get_full_name }}</strong>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ rec.approved_by.hospital_affiliation|default:"GabAI Clinic" }}</div>
+                    {% else %}
+                    <span class="text-muted"><i class="fa-solid fa-user-clock me-1"></i>Awaiting Physician Assignment</span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-end pe-4 py-3">
+                  <div class="d-flex justify-content-end gap-1 flex-wrap">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#recDetailRow{{ rec.id }}" aria-expanded="false" title="Click to view all plan details inline">
+                      <i class="fa-solid fa-chevron-down me-1"></i> Details
+                    </button>
+                    {% if rec.is_visible_to_patient %}
+                    <a href="{% url 'recommendations:patient_view' rec.id %}" class="btn btn-sm btn-mc-primary">
+                      <i class="fa-solid fa-eye me-1"></i> Open Plan
+                    </a>
+                    {% else %}
+                    <a href="{% url 'recommendations:patient_view' rec.id %}" class="btn btn-sm btn-outline-primary" title="Preview draft guidance">
+                      <i class="fa-solid fa-file-lines me-1"></i> Preview
+                    </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Expandable In-Depth Details Drawer for Every Plan -->
+              <tr class="collapse" id="recDetailRow{{ rec.id }}">
+                <td colspan="5" class="p-0 border-0">
+                  <div class="p-4 bg-light border-top border-bottom">
+                    <div class="row g-3">
+                      <!-- Clinical Summary & AI Rationale -->
+                      <div class="col-md-7">
+                        <div class="p-3 bg-white rounded border h-100">
+                          <h6 class="fw-bold text-dark mb-2">
+                            <i class="fa-solid fa-file-medical text-primary me-2"></i>Clinical Guidance Summary &amp; Overview
+                          </h6>
+                          <p class="text-secondary mb-3" style="font-size: 0.875rem; line-height: 1.6;">
+                            {{ rec.summary_content|default:"Guidance details are being structured according to clinical screening indicators." }}
+                          </p>
+
+                          {% if rec.coping_strategies %}
+                          <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">
+                            <i class="fa-solid fa-heart-pulse text-success me-1"></i> Recommended Coping &amp; Wellness Strategies:
+                          </h6>
+                          <ul class="mb-0 ps-3 text-secondary" style="font-size: 0.85rem;">
+                            {% for strategy in rec.coping_strategies %}
+                            <li class="mb-1">{{ strategy }}</li>
+                            {% endfor %}
+                          </ul>
+                          {% endif %}
+                        </div>
+                      </div>
+
+                      <!-- Physician Notes & Schedule Details -->
+                      <div class="col-md-5">
+                        <div class="p-3 bg-white rounded border h-100 d-flex flex-column justify-content-between">
+                          <div>
+                            <h6 class="fw-bold text-dark mb-2">
+                              <i class="fa-solid fa-user-doctor text-success me-2"></i>Physician Review &amp; Instructions
+                            </h6>
+                            <div class="p-2 rounded bg-light border mb-3" style="font-size: 0.825rem;">
+                              {% if rec.follow_up_guidance %}
+                                <strong class="text-success"><i class="fa-solid fa-comment-medical me-1"></i> Doctor's Note:</strong>
+                                <div>{{ rec.follow_up_guidance }}</div>
+                              {% else %}
+                                <span class="text-muted"><i class="fa-solid fa-hourglass-start me-1"></i> No doctor instructions published yet. A licensed physician will review and add clinical notes before official release.</span>
+                              {% endif %}
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.825rem;">
+                              <span class="text-muted">Daily Schedule Routines:</span>
+                              <strong>{{ rec.daily_schedule_plan|length }} activities</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.825rem;">
+                              <span class="text-muted">Weekly Lifestyle Sessions:</span>
+                              <strong>{{ rec.weekly_activities_plan|length }} activities</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.825rem;">
+                              <span class="text-muted">Approval Date:</span>
+                              <strong>{{ rec.approved_at|date:"M d, Y h:i A"|default:"Pending Review" }}</strong>
+                            </div>
+                          </div>
+
+                          <div class="pt-3 border-top mt-3 d-flex gap-2">
+                            <a href="{% url 'assessments:summary' rec.assessment.id %}" class="btn btn-sm btn-outline-secondary w-50">
+                              <i class="fa-solid fa-chart-simple me-1"></i> Assessment
+                            </a>
+                            <a href="{% url 'reports:screening_report' rec.assessment.id %}" target="_blank" class="btn btn-sm btn-outline-secondary w-50">
+                              <i class="fa-solid fa-print me-1"></i> Print Report
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Statutory Disclaimers Banner -->
+                      <div class="col-12">
+                        <div class="p-2 px-3 rounded border border-warning-subtle bg-warning-subtle bg-opacity-25" style="font-size: 0.775rem;">
+                          <strong class="text-warning-emphasis"><i class="fa-solid fa-shield-halved me-1"></i> Clinical Safety Boundary (RA 10173):</strong>
+                          {{ rec.contraindication_disclaimer }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                  <i class="fa-solid fa-clipboard-question fa-2x mb-2 text-secondary"></i>
+                  <div>No care plans on file. Complete a screening assessment to generate personalized guidance.</div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Clean Pagination Footer Controls (10 items per page) -->
+        {% if paginator.num_pages > 1 %}
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top bg-light">
+          <div class="text-muted mb-2 mb-md-0" style="font-size: 0.8rem;">
+            Showing page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong> &bull; Total <strong>{{ total_recs_count }}</strong> care plans (10 per page)
+          </div>
+          <nav aria-label="Care plan table pagination">
+            <ul class="pagination pagination-sm mb-0">
+              {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page=1" aria-label="First">
+                  <i class="fa-solid fa-angles-left"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                  <i class="fa-solid fa-angle-left"></i> Previous
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i> Previous</span></li>
+              {% endif %}
+
+              {% for p in paginator.page_range %}
+                {% if p == page_obj.number %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+                {% elif p > page_obj.number|add:-3 and p < page_obj.number|add:3 %}
+                <li class="page-item"><a class="page-link" href="?page={{ p }}">{{ p }}</a></li>
+                {% endif %}
+              {% endfor %}
+
+              {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                  Next <i class="fa-solid fa-angle-right"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
+                  <i class="fa-solid fa-angles-right"></i>
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link">Next <i class="fa-solid fa-angle-right"></i></span></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

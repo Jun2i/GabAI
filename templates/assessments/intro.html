@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Mental Health Assessment - GabAI{% endblock %}
+{% block page_title %}Mental Health Screening Assessment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    
+    <div class="mc-card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #E6F4EA, #EBF8FF);">
+      <div class="mc-card-body p-4 p-md-5">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <span class="badge bg-white text-success border px-3 py-2 rounded-pill fw-semibold mb-2">
+              <i class="fa-solid fa-notes-medical me-1"></i> Multi-Domain Screening Module
+            </span>
+            <h2 class="fw-bold text-dark mb-2">Mental Health Screening Assessment</h2>
+            <p class="text-secondary mb-4" style="line-height: 1.6;">
+              This concise screening questionnaire evaluates core emotional indicators, stress, sleep, and personal well-being. Responses assist attending physicians in reviewing preliminary indicators and authorizing personalized wellness guidance or clinical follow-up.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{% url 'assessments:start' %}" class="btn btn-mc-primary btn-lg px-4">
+                <i class="fa-solid fa-play me-2"></i> Start Screening Assessment
+              </a>
+              {% if latest_assessment %}
+              <a href="{% url 'assessments:summary' latest_assessment.id %}" class="btn btn-outline-secondary btn-lg px-3">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> View Latest Results
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-4 text-center mt-4 mt-md-0 d-none d-md-block">
+            <div class="p-3 bg-white rounded-circle shadow-sm d-inline-block">
+              <i class="fa-solid fa-heart-pulse text-success" style="font-size: 5rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statutory Clinical & Non-Diagnostic Disclaimer -->
+    <div class="clinical-disclaimer-box mb-4">
+      <div class="d-flex align-items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-primary mt-1"></i>
+        <div>
+          <strong>IMPORTANT CLINICAL NOTICE:</strong>
+          This questionnaire is a screening aid, NOT a clinical diagnostic instrument. Low scores do not guarantee the absence of health conditions, nor do elevated scores constitute an official medical diagnosis. All generated wellness recommendations are reviewed and approved by a licensed physician before clinical guidance is released.
+        </div>
+      </div>
+    </div>
+
+    <!-- The 6 Core Screening Domains -->
+    <div class="mc-card">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Screening Domains Included in this Assessment</h6>
+        <span class="badge bg-light text-muted border">{{ categories.count }} Core Clinical Dimensions</span>
+      </div>
+      <div class="mc-card-body p-4">
+        <div class="row g-3">
+          {% for cat in categories %}
+          <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded h-100 bg-white">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge {% if cat.is_critical_safety %}bg-danger{% else %}bg-success-subtle text-success{% endif %} rounded-pill">
+                  {{ cat.category_order }}
+                </span>
+                <strong style="font-size: 0.9rem;" class="{% if cat.is_critical_safety %}text-danger{% else %}text-dark{% endif %}">
+                  {{ cat.name }}
+                </strong>
+              </div>
+              <p class="text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                {{ cat.description }}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

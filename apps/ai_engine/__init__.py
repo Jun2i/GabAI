@@ -1,0 +1,2 @@
+# AI Engine App
+default_app_config = 'apps.ai_engine.apps.AiEngineConfig'

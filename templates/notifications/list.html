@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Center - GabAI{% endblock %}
+{% block page_title %}Notification Center{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="mc-card">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">System Notifications & Alerts</h5>
+          <div class="text-muted" style="font-size: 0.8rem;">Clinical alerts, recommendation updates, and appointment notices</div>
+        </div>
+        <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-check-double me-1"></i> Mark All as Read
+        </a>
+      </div>
+
+      <div class="mc-card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for n in notifications %}
+          <div class="list-group-item p-3 d-flex justify-content-between align-items-start {% if not n.is_read %}bg-light bg-opacity-75{% endif %}">
+            <div class="d-flex align-items-start gap-3">
+              <div class="stat-icon {% if n.is_urgent %}red{% elif n.notification_type == 'RECOMMENDATION_APPROVED' %}green{% else %}blue{% endif %}" style="width: 42px; height: 42px; font-size: 1.1rem; flex-shrink: 0;">
+                {% if n.is_urgent %}
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {% elif n.notification_type == 'RECOMMENDATION_APPROVED' %}
+                <i class="fa-solid fa-check"></i>
+                {% else %}
+                <i class="fa-solid fa-bell"></i>
+                {% endif %}
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <h6 class="fw-bold mb-0 text-dark">{{ n.title }}</h6>
+                  {% if not n.is_read %}
+                  <span class="badge bg-primary" style="font-size: 0.65rem;">New</span>
+                  {% endif %}
+                  {% if n.is_urgent %}
+                  <span class="badge bg-danger" style="font-size: 0.65rem;">Urgent</span>
+                  {% endif %}
+                </div>
+                <p class="text-secondary mb-1" style="font-size: 0.875rem;">{{ n.message }}</p>
+                <small class="text-muted" style="font-size: 0.725rem;">{{ n.created_at|date:"M d, Y - h:i A" }} ({{ n.created_at|timesince }} ago)</small>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              {% if n.action_url %}
+              <a href="{% url 'notifications:mark_read' n.id %}" class="btn btn-sm btn-outline-primary">
+                View
+              </a>
+              {% elif not n.is_read %}
+              <a href="{% url 'notifications:mark_read' n.id %}" class="btn btn-sm btn-light" title="Mark as Read">
+                <i class="fa-solid fa-check"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="p-5 text-center text-muted">
+            <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary"></i>
+            <p>No notifications yet.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

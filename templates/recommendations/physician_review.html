@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Physician Review Hub - Recommendation #{{ recommendation.id }} - GabAI{% endblock %}
+{% block page_title %}AI Recommendation Clinical Review Hub{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    
+    <!-- Recommendation Header Banner -->
+    <div class="mc-card mb-4 border-primary-subtle">
+      <div class="mc-card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge {% if recommendation.status == 'PENDING_APPROVAL' %}badge-status-pending{% elif recommendation.status == 'APPROVED' %}badge-status-approved{% elif recommendation.status == 'MODIFIED_AND_APPROVED' %}badge-status-modified{% elif recommendation.status == 'REJECTED' %}badge-status-rejected{% else %}badge-status-hold{% endif %} me-2">
+            {{ recommendation.get_status_display }}
+          </span>
+          <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">
+            Recommendation #{{ recommendation.id }} &bull; Version {{ recommendation.current_version }}
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark border">
+            {{ recommendation.get_pathway_display }}
+          </span>
+          <a href="{% url 'recommendations:version_history' recommendation.id %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fa-solid fa-code-compare me-1"></i> Version History ({{ versions.count }})
+          </a>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4">
+        
+        <!-- Patient Summary strip -->
+        <div class="p-3 bg-light rounded mb-4 d-flex flex-wrap justify-content-between align-items-center">
+          <div>
+            <h5 class="fw-bold mb-0">{{ recommendation.patient.user.get_full_name }}</h5>
+            <div class="text-muted" style="font-size: 0.8rem;">
+              Age: {{ recommendation.patient.age|default:"N/A" }} &bull;
+              Gender: {{ recommendation.patient.gender }} &bull;
+              Occupation: {{ recommendation.patient.occupation|default:"N/A" }} &bull;
+              Schedule: {{ recommendation.patient.work_or_school_schedule|default:"N/A" }}
+            </div>
+          </div>
+          <div>
+            <a href="{% url 'physicians:patient_detail' recommendation.patient.id %}" class="btn btn-sm btn-outline-primary">
+              <i class="fa-solid fa-folder-open me-1"></i> Open Medical Chart
+            </a>
+          </div>
+        </div>
+
+        {% if assessment.has_safety_flag %}
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+          <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+          <div>
+            <strong>CRITICAL SAFETY ALERT ACTIVE:</strong> Patient reported crisis indicators in Assessment #{{ assessment.id }}.
+            Safety protocol is active. Please review emergency triage.
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Form for Review Actions: APPROVE, MODIFY, REJECT, REQUEST_FURTHER_ASSESSMENT -->
+        <form method="post" id="reviewActionForm">
+          {% csrf_token %}
+
+          <!-- Recommendation Title & Overview -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">Recommendation Title (Editable)</label>
+            <input type="text" name="title" class="form-control form-control-lg fw-semibold" value="{{ recommendation.title }}" required>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">Clinical Care Guidance Summary (Editable)</label>
+            <textarea name="summary_content" rows="4" class="form-control" required>{{ recommendation.summary_content }}</textarea>
+            <small class="text-muted">Physicians can edit wording, remove inappropriate suggestions, or add clinical emphasis.</small>
+          </div>
+
+          <!-- Structured Daily Schedule Editor -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label fw-bold text-dark mb-0">Daily Wellness Schedule (JSON Structured)</label>
+              <span class="badge bg-light text-muted border">Auto-synced to patient calendar</span>
+            </div>
+            <textarea name="daily_schedule_json" rows="8" class="form-control font-monospace" style="font-size: 0.85rem;">{{ daily_schedule_json }}</textarea>
+            <small class="text-muted">You can customize activity times, descriptions, and categories directly.</small>
+          </div>
+
+          <!-- Coping Strategies Textarea -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">Targeted Coping Strategies (One per line)</label>
+            <textarea name="coping_strategies_text" rows="5" class="form-control">{{ coping_text }}</textarea>
+          </div>
+
+          <!-- Physician Instructions for Patient -->
+          <div class="mb-4 p-3 bg-light rounded border">
+            <label class="form-label fw-bold text-primary mb-1">
+              <i class="fa-solid fa-stethoscope me-1"></i> Accompanying Physician Notes / Instructions for Patient
+            </label>
+            <textarea name="instructions_for_patient" rows="3" class="form-control" placeholder="Optional clinical guidance released directly with this approved recommendation...">{{ recommendation.follow_up_guidance|default:'' }}</textarea>
+            <small class="text-muted">These notes appear prominently on the patient's dashboard alongside the approved schedule.</small>
+          </div>
+
+          <!-- Mandatory Decision Rationale -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">
+              Clinical Review Rationale / Notes <span class="text-danger">*</span>
+            </label>
+            <textarea name="decision_reason" rows="2" class="form-control" placeholder="Provide clinical justification for your approval, modification, or rejection decision (Recorded in audit trail)..." required></textarea>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="d-flex flex-wrap gap-2 pt-3 border-top justify-content-between align-items-center">
+            
+            <div class="d-flex flex-wrap gap-2">
+              <!-- APPROVE -->
+              <button type="submit" name="action" value="APPROVE" class="btn btn-mc-primary btn-lg px-4">
+                <i class="fa-solid fa-check me-2"></i> Approve & Release to Patient
+              </button>
+
+              <!-- MODIFY & APPROVE -->
+              <button type="submit" name="action" value="MODIFY" class="btn btn-mc-secondary btn-lg px-3">
+                <i class="fa-solid fa-pen-to-square me-2"></i> Save Modifications & Release
+              </button>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+              <!-- REQUEST FURTHER ASSESSMENT -->
+              <button type="submit" name="action" value="REQUEST_FURTHER_ASSESSMENT" class="btn btn-outline-warning">
+                <i class="fa-solid fa-pause me-1"></i> Request Further Assessment
+              </button>
+
+              <!-- REJECT -->
+              <button type="submit" name="action" value="REJECT" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to REJECT this recommendation? A rationale is required.');">
+                <i class="fa-solid fa-ban me-1"></i> Reject
+              </button>
+
+              <!-- REGENERATE AI -->
+              <button type="submit" name="action" value="REGENERATE_AI" class="btn btn-outline-secondary" onclick="return confirm('Regenerate AI analysis with updated parameters?');">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Re-Run AI
+              </button>
+            </div>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Audit History Trail for this Recommendation -->
+    <div class="mc-card">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Physician Approval & Modification Audit Trail</h6>
+        <span class="badge bg-light text-muted border">Immutable Record</span>
+      </div>
+      <div class="mc-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Review Timestamp</th>
+                <th>Physician</th>
+                <th>Decision</th>
+                <th>Clinical Justification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in approval_history %}
+              <tr>
+                <td class="ps-4 text-nowrap text-muted">{{ app.reviewed_at|date:"Y-m-d H:i" }}</td>
+                <td><strong>Dr. {{ app.physician.user.get_full_name }}</strong></td>
+                <td>
+                  <span class="badge {% if app.decision == 'APPROVED' %}bg-success{% elif app.decision == 'MODIFIED_AND_APPROVED' %}bg-primary{% elif app.decision == 'REJECTED' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                    {{ app.get_decision_display }}
+                  </span>
+                </td>
+                <td>{{ app.reason_or_notes }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-3 text-muted">No physician decisions recorded yet. Status is currently pending initial review.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right Sidebar: Assessment Responses & AI Clinical Analysis -->
+  <div class="col-lg-4">
+    
+    <!-- AI Clinical Summary -->
+    {% if ai_analysis %}
+    <div class="mc-card mb-4">
+      <div class="mc-card-header bg-light">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="fa-solid fa-brain me-1 text-primary"></i> AI Clinical Analysis
+        </h6>
+        <span class="badge bg-white text-secondary border">Model: {{ ai_analysis.model_used }}</span>
+      </div>
+      <div class="mc-card-body p-3" style="font-size: 0.85rem;">
+        <div class="mb-3">
+          <strong class="text-dark d-block mb-1">Physician-Targeted Summary:</strong>
+          <p class="text-secondary mb-0" style="line-height: 1.5;">{{ ai_analysis.physician_readable_summary }}</p>
+        </div>
+
+        <div class="mb-3">
+          <strong class="text-dark d-block mb-1">Identified Response Patterns:</strong>
+          <p class="text-secondary mb-0">{{ ai_analysis.identified_patterns|default:"Consistent pattern across active screening domains." }}</p>
+        </div>
+
+        <div class="mb-3">
+          <strong class="text-dark d-block mb-1">Reported Daily Activity Impact:</strong>
+          <p class="text-secondary mb-0">{{ ai_analysis.daily_activity_effects|default:"Routine difficulties and energy disruption noted." }}</p>
+        </div>
+
+        <div>
+          <strong class="text-dark d-block mb-1">Recommended Areas for Clinical Interview:</strong>
+          <p class="text-secondary mb-0">{{ ai_analysis.areas_for_investigation|default:"Duration of symptoms and psychosocial stressors." }}</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Assessment Screening Indicators -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header bg-light">
+        <h6 class="fw-bold mb-0">Screening Indicator Breakdown</h6>
+        <a href="{% url 'assessments:summary' assessment.id %}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.75rem;">
+          Full Assessment <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+      </div>
+      <div class="mc-card-body p-3">
+        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+          <span class="text-muted" style="font-size: 0.85rem;">PHQ-9 Depression:</span>
+          <strong class="text-dark">{{ assessment.phq9_score|default:"0" }}/9 ({{ assessment.phq9_severity|default:"None" }})</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+          <span class="text-muted" style="font-size: 0.85rem;">GAD-7 Anxiety:</span>
+          <strong class="text-dark">{{ assessment.gad7_score|default:"0" }}/9 ({{ assessment.gad7_severity|default:"None" }})</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+          <span class="text-muted" style="font-size: 0.85rem;">Safety Screening:</span>
+          {% if assessment.has_safety_flag %}
+          <span class="badge bg-danger">Critical Alert Flagged</span>
+          {% else %}
+          <span class="badge bg-success-subtle text-success">No Acute Crisis Reported</span>
+          {% endif %}
+        </div>
+
+        <h6 class="fw-bold text-dark mb-2" style="font-size: 0.8rem;">Category Severity Indicators:</h6>
+        <div style="max-height: 250px; overflow-y: auto;">
+          {% for res in screening_results %}
+          <div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="font-size: 0.8rem;">
+            <span class="text-truncate" style="max-width: 180px;">{{ res.category.name }}</span>
+            <span class="badge {% if res.is_elevated %}bg-warning-subtle text-warning-emphasis{% else %}bg-light text-muted{% endif %}">
+              {{ res.severity_level }} ({{ res.raw_score|floatformat:0 }})
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

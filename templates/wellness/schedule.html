@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Mental Wellness Schedule & Activity Tracker - GabAI{% endblock %}
+{% block page_title %}Mental Wellness Daily Schedule & Tracker{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  
+  <!-- Left Column: Activity Timeline -->
+  <div class="col-lg-8">
+    
+    <!-- Top Progress Strip -->
+    <div class="mc-card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #E6F4EA, #EBF8FF);">
+      <div class="mc-card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <span class="badge bg-white text-success border px-3 py-1 rounded-pill fw-semibold mb-2">
+              <i class="fa-solid fa-fire text-danger me-1"></i> {{ streak_count }} Day Habit Streak
+            </span>
+            <h4 class="fw-bold text-dark mb-1">{{ schedule.title|default:"Personalized Mental Wellness Schedule" }}</h4>
+            <div class="text-secondary" style="font-size: 0.85rem;">
+              {% if schedule.is_physician_approved %}
+                <span class="text-success"><i class="fa-solid fa-check-circle me-1"></i> Physician Approved Plan</span>
+              {% else %}
+                <span class="text-warning-emphasis"><i class="fa-solid fa-clock me-1"></i> Preliminary Schedule (Pending Physician Authorization)</span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="text-center bg-white p-3 rounded-circle shadow-sm" style="width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <span class="fw-bold text-success" style="font-size: 1.25rem;">{{ completion_rate }}%</span>
+            <small class="text-muted" style="font-size: 0.65rem;">Done Today</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Timeline Activities -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">Today's Scheduled Wellness Activities</h5>
+          <div class="text-muted" style="font-size: 0.85rem;">{{ selected_date|date:"l, F d, Y" }}</div>
+        </div>
+        <span class="badge bg-light text-muted border">{{ daily_activities.count }} Activities</span>
+      </div>
+
+      <div class="mc-card-body p-4">
+        <div class="activity-timeline">
+          {% for act in daily_activities %}
+          <div class="activity-timeline-item">
+            <div class="activity-node {% if act.status == 'COMPLETED' %}completed{% endif %}"></div>
+            
+            <div class="activity-card {% if act.status == 'COMPLETED' %}border-success bg-light{% endif %}">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-light text-primary border">
+                    <i class="fa-regular fa-clock me-1"></i> {{ act.start_time|time:"h:i A" }} - {{ act.end_time|time:"h:i A" }}
+                  </span>
+                  <span class="badge bg-secondary-subtle text-secondary">
+                    {{ act.get_category_display }}
+                  </span>
+                </div>
+                <div>
+                  <span class="badge {% if act.status == 'COMPLETED' %}bg-success{% elif act.status == 'SKIPPED' %}bg-secondary{% elif act.status == 'RESCHEDULED' %}bg-warning text-dark{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                    {{ act.get_status_display }}
+                  </span>
+                </div>
+              </div>
+
+              <h6 class="fw-bold text-dark mb-1">{{ act.title }}</h6>
+              <p class="text-secondary mb-2" style="font-size: 0.875rem; line-height: 1.5;">{{ act.description }}</p>
+
+              <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2">
+                <div class="text-muted" style="font-size: 0.775rem;">
+                  <i class="fa-solid fa-bullseye text-primary me-1"></i> <strong>Clinical Target:</strong> {{ act.purpose }}
+                </div>
+
+                {% if is_patient %}
+                <!-- Patient Activity Action Buttons -->
+                <div class="d-flex gap-1">
+                  {% if act.status != 'COMPLETED' %}
+                  <form method="post" action="{% url 'wellness:update_activity' act.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="COMPLETED">
+                    <button type="submit" class="btn btn-sm btn-success" title="Mark Completed">
+                      <i class="fa-solid fa-check me-1"></i> Complete
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'wellness:update_activity' act.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="SKIPPED">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Skip for today">
+                      Skip
+                    </button>
+                  </form>
+                  {% else %}
+                  <form method="post" action="{% url 'wellness:update_activity' act.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="PENDING">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                      <i class="fa-solid fa-rotate-left me-1"></i> Undo
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+                {% endif %}
+              </div>
+
+              {% if act.patient_notes %}
+              <div class="mt-2 p-2 bg-white rounded border text-muted" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-note-sticky text-warning me-1"></i> Note: {{ act.patient_notes }}
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-calendar-xmark fa-2x mb-2 text-secondary"></i>
+            <p>No activities scheduled for today. Complete an assessment to generate your personalized wellness routine.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Milestone Activities -->
+    {% if weekly_activities %}
+    <div class="mc-card">
+      <div class="mc-card-header">
+        <h5 class="fw-bold mb-0">Weekly Mental Wellness Milestones</h5>
+        <span class="badge bg-light text-muted border">Weekly Routine</span>
+      </div>
+      <div class="mc-card-body p-4">
+        <div class="row g-3">
+          {% for w_act in weekly_activities %}
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-primary-subtle text-primary fw-semibold">Weekly Milestone</span>
+                <span class="badge {% if w_act.status == 'COMPLETED' %}bg-success{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                  {{ w_act.get_status_display }}
+                </span>
+              </div>
+              <h6 class="fw-bold text-dark mb-1">{{ w_act.title }}</h6>
+              <p class="text-muted mb-2" style="font-size: 0.825rem;">{{ w_act.description }}</p>
+              <div class="text-secondary" style="font-size: 0.75rem;">
+                <i class="fa-solid fa-award text-warning me-1"></i> {{ w_act.purpose }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right Column: Summary & Doughnut Tracker -->
+  <div class="col-lg-4">
+    
+    <!-- Doughnut Chart Card -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Daily Completion Rate</h6>
+        <span class="badge bg-light text-muted border">{{ selected_date|date:"M d" }}</span>
+      </div>
+      <div class="mc-card-body p-4 text-center">
+        <div style="height: 220px; position: relative;">
+          <canvas id="activityDoughnutCanvas"></canvas>
+        </div>
+        <div class="mt-3 text-secondary" style="font-size: 0.85rem;">
+          Consistent participation reinforces neurobiological resilience and circadian stabilization.
+        </div>
+      </div>
+    </div>
+
+    <!-- Routine Context Info Card -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">AI Personalization Parameters</h6>
+        <a href="{% url 'patients:profile' %}" class="btn btn-sm btn-link text-decoration-none p-0" style="font-size: 0.8rem;">Edit</a>
+      </div>
+      <div class="mc-card-body p-3" style="font-size: 0.85rem;">
+        <div class="mb-2 pb-2 border-bottom">
+          <span class="text-muted d-block">Routine Schedule:</span>
+          <strong>{{ patient.work_or_school_schedule|default:"Not configured" }}</strong>
+        </div>
+        <div class="mb-2 pb-2 border-bottom">
+          <span class="text-muted d-block">Interests & Hobbies:</span>
+          <strong>{{ patient.personal_interests|default:"General relaxation" }}</strong>
+        </div>
+        <div>
+          <span class="text-muted d-block">Available Free Time:</span>
+          <strong>{{ patient.available_free_time|default:"1-2 hours daily" }}</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const total = {{ total_count|default:0 }};
+  const completedCount = {{ completed_count|default:0 }};
+  const remaining = total > completedCount ? total - completedCount : 0;
+  renderActivityDoughnut('activityDoughnutCanvas', completedCount, remaining);
+});
+</script>
+{% endblock %}
+

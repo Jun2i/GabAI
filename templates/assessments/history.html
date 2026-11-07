@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Screening History & Assessment Trends - GabAI{% endblock %}
+{% block page_title %}Patient Assessment History{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    
+    <div class="mc-card mb-4">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">Previous Mental Health Assessments</h5>
+          <div class="text-muted" style="font-size: 0.85rem;">Chronological log of completed multi-domain screening evaluations</div>
+        </div>
+        {% if request.user.is_patient %}
+        <a href="{% url 'assessments:start' %}" class="btn btn-sm btn-mc-primary">
+          <i class="fa-solid fa-plus me-1"></i> Start New Assessment
+        </a>
+        {% endif %}
+      </div>
+      <div class="mc-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Assessment ID</th>
+                <th>Patient</th>
+                <th>Date Submitted</th>
+                <th>PHQ-9 Score</th>
+                <th>GAD-7 Score</th>
+                <th>Safety Status</th>
+                <th>Review Status</th>
+                <th class="text-end pe-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in assessments %}
+              <tr>
+                <td class="ps-4">
+                  <strong>#{{ a.id }}</strong>
+                </td>
+                <td>
+                  <strong>{{ a.patient.user.get_full_name }}</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">Age {{ a.patient.age|default:"N/A" }} &bull; {{ a.patient.occupation|default:"Patient" }}</div>
+                </td>
+                <td>{{ a.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <strong>{{ a.phq9_score|default:"-" }}/9</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">{{ a.phq9_severity|default:"" }}</div>
+                </td>
+                <td>
+                  <strong>{{ a.gad7_score|default:"-" }}/9</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">{{ a.gad7_severity|default:"" }}</div>
+                </td>
+                <td>
+                  {% if a.has_safety_flag %}
+                  <span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i> Safety Alert</span>
+                  {% else %}
+                  <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check me-1"></i> Cleared</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ a.get_status_display }}</span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="{% url 'assessments:summary' a.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                    <i class="fa-solid fa-chart-simple me-1"></i> Summary
+                  </a>
+                  <a href="{% url 'reports:screening_report' a.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fa-solid fa-file-lines me-1"></i> Report
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">No assessment records found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

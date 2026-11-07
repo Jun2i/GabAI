@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Analytics & Trends - GabAI{% endblock %}
+{% block page_title %}Clinical Screening Analytics & Trends{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Total Screenings Completed</div>
+        <div class="stat-number text-dark">{{ total_assessments }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">Multi-category evaluations</small>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Physician Approved Plans</div>
+        <div class="stat-number text-success">{{ approved_recs }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">Authorized by doctor</small>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-stamp"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Pending Physician Review</div>
+        <div class="stat-number text-primary">{{ pending_recs }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">Awaiting sign-off</small>
+      </div>
+      <div class="stat-icon blue">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Wellness Activities Completed</div>
+        <div class="stat-number text-dark">{{ completed_activities }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">of {{ total_activities }} scheduled</small>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-person-walking"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Category Elevation Frequency Bar Chart -->
+  <div class="col-lg-8">
+    <div class="mc-card h-100">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Elevated Symptom Frequency Across 13 Screening Categories</h6>
+        <span class="badge bg-light text-muted border">Clinical Burden %</span>
+      </div>
+      <div class="mc-card-body p-4">
+        <div style="height: 340px;">
+          <canvas id="categoryBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendation Approval Breakdown Doughnut -->
+  <div class="col-lg-4">
+    <div class="mc-card h-100">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Physician Approval Distribution</h6>
+      </div>
+      <div class="mc-card-body p-4 text-center">
+        <div style="height: 240px; position: relative;">
+          <canvas id="approvalDoughnutChart"></canvas>
+        </div>
+        <div class="row g-2 mt-3 text-start" style="font-size: 0.8rem;">
+          <div class="col-6">Approved: <strong>{{ approved_recs }}</strong></div>
+          <div class="col-6">Pending: <strong>{{ pending_recs }}</strong></div>
+          <div class="col-6">Further Eval: <strong>{{ hold_recs }}</strong></div>
+          <div class="col-6">Rejected: <strong>{{ rejected_recs }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category Stats Table -->
+<div class="mc-card">
+  <div class="mc-card-header">
+    <h6 class="fw-bold mb-0">Screening Category Burden Table</h6>
+  </div>
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Screening Domain</th>
+            <th>Elevated Cases Flagged</th>
+            <th>Elevation Rate</th>
+            <th>Clinical Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cs in category_stats %}
+          <tr>
+            <td class="ps-4"><strong>{{ cs.name }}</strong></td>
+            <td>{{ cs.elevated_count }} cases</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height: 6px; width: 120px;">
+                  <div class="progress-bar bg-success" style="width: {{ cs.percentage }}%;"></div>
+                </div>
+                <span>{{ cs.percentage }}%</span>
+              </div>
+            </td>
+            <td>
+              {% if cs.percentage > 40 %}
+              <span class="badge bg-danger-subtle text-danger">Elevated Frequency</span>
+              {% elif cs.percentage > 20 %}
+              <span class="badge bg-warning-subtle text-warning-emphasis">Moderate</span>
+              {% else %}
+              <span class="badge bg-light text-secondary">Baseline</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Category Bar Chart
+  const barCtx = document.getElementById('categoryBarChart');
+  if (barCtx) {
+    new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: [{% for cs in category_stats %}"{{ cs.name|truncatechars:12 }}",{% endfor %}],
+        datasets: [{
+          label: 'Elevation Rate (%)',
+          data: [{% for cs in category_stats %}{{ cs.percentage }},{% endfor %}],
+          backgroundColor: '#2D7A5E',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100 }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // Approval Doughnut Chart
+  const donutCtx = document.getElementById('approvalDoughnutChart');
+  if (donutCtx) {
+    new Chart(donutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Approved', 'Pending', 'Further Eval', 'Rejected'],
+        datasets: [{
+          data: [{{ approved_recs }}, {{ pending_recs }}, {{ hold_recs }}, {{ rejected_recs }}],
+          backgroundColor: ['#2D7A5E', '#D97706', '#1D70B8', '#DC2626'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

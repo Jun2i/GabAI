@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Appointments & Consultations - GabAI{% endblock %}
+{% block page_title %}Clinical Appointments & Consultations{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    
+    <div class="mc-card">
+      <div class="mc-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0">Scheduled Consultations & Follow-ups</h5>
+          <div class="text-muted" style="font-size: 0.85rem;">Manage upcoming psychiatric consultations and clinical interviews</div>
+        </div>
+        <a href="{% url 'appointments:request' %}" class="btn btn-sm btn-mc-primary">
+          <i class="fa-solid fa-plus me-1"></i> Request Consultation
+        </a>
+      </div>
+
+      <div class="mc-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Date & Time</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Type</th>
+                <th>Mode</th>
+                <th>Status</th>
+                <th class="text-end pe-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in appointments %}
+              <tr>
+                <td class="ps-4">
+                  <strong>{{ apt.appointment_date|date:"M d, Y" }}</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">{{ apt.start_time|time:"h:i A" }} - {{ apt.end_time|time:"h:i A" }}</div>
+                </td>
+                <td>
+                  <strong>{{ apt.patient.user.get_full_name }}</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">ID #{{ apt.patient.id }}</div>
+                </td>
+                <td>
+                  <strong>Dr. {{ apt.physician.user.get_full_name }}</strong>
+                  <div class="text-muted" style="font-size: 0.75rem;">{{ apt.physician.specialization }}</div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ apt.get_appointment_type_display }}</span></td>
+                <td>
+                  {% if apt.consultation_mode == 'TELEHEALTH' %}
+                  <span class="text-primary"><i class="fa-solid fa-video me-1"></i> Telehealth</span>
+                  {% else %}
+                  <span class="text-secondary"><i class="fa-solid fa-clinic-medical me-1"></i> In-Person</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge {% if apt.status == 'CONFIRMED' %}bg-success{% elif apt.status == 'REQUESTED' %}bg-warning text-dark{% elif apt.status == 'COMPLETED' %}bg-primary{% else %}bg-secondary{% endif %}">
+                    {{ apt.get_status_display }}
+                  </span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="{% url 'appointments:detail' apt.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fa-solid fa-eye me-1"></i> Details
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No appointments found. Click "Request Consultation" to schedule one.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Clean Pagination Footer Controls (10 items per page) -->
+        {% if paginator.num_pages > 1 %}
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top bg-light">
+          <div class="text-muted mb-2 mb-md-0" style="font-size: 0.8rem;">
+            Showing page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong> &bull; Total <strong>{{ paginator.count }}</strong> appointments (10 per page)
+          </div>
+          <nav aria-label="Appointment pagination">
+            <ul class="pagination pagination-sm mb-0">
+              {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page=1" aria-label="First">
+                  <i class="fa-solid fa-angles-left"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                  <i class="fa-solid fa-angle-left"></i> Previous
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i> Previous</span></li>
+              {% endif %}
+
+              {% for p in paginator.page_range %}
+                {% if p == page_obj.number %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+                {% elif p > page_obj.number|add:-3 and p < page_obj.number|add:3 %}
+                <li class="page-item"><a class="page-link" href="?page={{ p }}">{{ p }}</a></li>
+                {% endif %}
+              {% endfor %}
+
+              {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                  Next <i class="fa-solid fa-angle-right"></i>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
+                  <i class="fa-solid fa-angles-right"></i>
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link">Next <i class="fa-solid fa-angle-right"></i></span></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

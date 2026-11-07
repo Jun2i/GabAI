@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment #{{ appointment.id }} - GabAI{% endblock %}
+{% block page_title %}Appointment Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card mb-4">
+      <div class="mc-card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge bg-primary me-2">Appointment #{{ appointment.id }}</span>
+          <span class="badge {% if appointment.status == 'CONFIRMED' %}bg-success{% elif appointment.status == 'REQUESTED' %}bg-warning text-dark{% elif appointment.status == 'COMPLETED' %}bg-primary{% else %}bg-secondary{% endif %}">
+            {{ appointment.get_status_display }}
+          </span>
+        </div>
+        <a href="{% url 'appointments:list' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i> Back to Appointments
+        </a>
+      </div>
+
+      <div class="mc-card-body p-4">
+        
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light">
+              <span class="text-muted d-block" style="font-size: 0.8rem;">Patient Information:</span>
+              <h5 class="fw-bold mb-1">{{ appointment.patient.user.get_full_name }}</h5>
+              <div class="text-secondary" style="font-size: 0.85rem;">
+                Phone: {{ appointment.patient.user.phone_number|default:"Not specified" }} &bull; Age: {{ appointment.patient.age|default:"N/A" }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light">
+              <span class="text-muted d-block" style="font-size: 0.8rem;">Attending Physician:</span>
+              <h5 class="fw-bold mb-1">Dr. {{ appointment.physician.user.get_full_name }}</h5>
+              <div class="text-secondary" style="font-size: 0.85rem;">
+                {{ appointment.physician.specialization }} &bull; {{ appointment.physician.hospital_affiliation }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4" style="font-size: 0.9rem;">
+          <div class="col-md-4">
+            <span class="text-muted d-block">Scheduled Date:</span>
+            <strong>{{ appointment.appointment_date|date:"F d, Y" }}</strong>
+          </div>
+          <div class="col-md-4">
+            <span class="text-muted d-block">Time Slot:</span>
+            <strong>{{ appointment.start_time|time:"h:i A" }} - {{ appointment.end_time|time:"h:i A" }}</strong>
+          </div>
+          <div class="col-md-4">
+            <span class="text-muted d-block">Consultation Mode:</span>
+            <strong>{{ appointment.get_consultation_mode_display }}</strong>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-1">Reason for Visit:</h6>
+          <p class="text-secondary mb-0 p-3 bg-light rounded">{{ appointment.reason_for_visit }}</p>
+        </div>
+
+        {% if appointment.meeting_link %}
+        <div class="p-3 border border-primary-subtle rounded bg-primary-subtle bg-opacity-25 mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong class="text-primary"><i class="fa-solid fa-video me-2"></i> Telehealth Video Consultation Link:</strong>
+              <div class="text-truncate text-secondary" style="font-size: 0.85rem;">{{ appointment.meeting_link }}</div>
+            </div>
+            <a href="{{ appointment.meeting_link }}" target="_blank" class="btn btn-sm btn-primary">
+              <i class="fa-solid fa-door-open me-1"></i> Join Call
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if can_manage %}
+        <!-- Physician & Staff Management Toolbar -->
+        <div class="border-top pt-4 mt-4">
+          <h6 class="fw-bold text-dark mb-3">Physician / Healthcare Staff Actions:</h6>
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Telehealth Link (if applicable)</label>
+              <input type="url" name="meeting_link" class="form-control" value="{{ appointment.meeting_link|default:'' }}" placeholder="https://telehealth.gabai.ai/room/...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Clinical Notes / Comments</label>
+              <textarea name="physician_notes" rows="2" class="form-control" placeholder="Internal or preparation notes...">{{ appointment.physician_notes|default:'' }}</textarea>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              {% if appointment.status == 'REQUESTED' %}
+              <button type="submit" name="action" value="CONFIRM" class="btn btn-success">
+                <i class="fa-solid fa-check me-1"></i> Confirm Appointment
+              </button>
+              {% endif %}
+
+              {% if appointment.status != 'COMPLETED' %}
+              <button type="submit" name="action" value="COMPLETE" class="btn btn-primary">
+                <i class="fa-solid fa-check-double me-1"></i> Mark as Completed
+              </button>
+              {% endif %}
+
+              {% if appointment.status != 'CANCELLED' %}
+              <button type="submit" name="action" value="CANCEL" class="btn btn-outline-danger" onclick="return confirm('Cancel this appointment?');">
+                <i class="fa-solid fa-xmark me-1"></i> Cancel Appointment
+              </button>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+        {% elif is_patient and appointment.status != 'CANCELLED' and appointment.status != 'COMPLETED' %}
+        <div class="border-top pt-4 mt-4">
+          <h6 class="fw-bold text-dark mb-2">Manage Appointment:</h6>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="action" value="CANCEL" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this appointment request?');">
+              <i class="fa-solid fa-xmark me-1"></i> Cancel My Appointment
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

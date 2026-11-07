@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start GabAI Server",
+            "type": "shell",
+            "command": "python manage.py runserver 0.0.0.0:8000",
+            "isBackground": true,
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Verification Test Suite",
+            "type": "shell",
+            "command": "python tests_comprehensive.py",
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment #{{ assessment.id }} Results & Screening Summary - GabAI{% endblock %}
+{% block page_title %}Assessment Screening Summary{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    
+    <!-- Assessment Meta Card -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge bg-primary me-2">Assessment #{{ assessment.id }}</span>
+          <span class="text-muted" style="font-size: 0.85rem;">Submitted on {{ assessment.submitted_at|date:"F d, Y - h:i A"|default:"Recently" }}</span>
+        </div>
+        <div>
+          <a href="{% url 'reports:screening_report' assessment.id %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="fa-solid fa-print me-1"></i> Print Formal Report
+          </a>
+        </div>
+      </div>
+      <div class="mc-card-body p-4">
+        
+        <!-- Standard Scale Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light text-center">
+              <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">PHQ-9 Depression Scale</div>
+              <div class="fw-bold text-dark mt-1" style="font-size: 1.75rem;">{{ assessment.phq9_score|default:"0" }} <span class="text-muted" style="font-size: 1rem;">/ 9</span></div>
+              <div class="badge bg-secondary-subtle text-secondary mt-1">{{ assessment.phq9_severity|default:"Evaluated" }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light text-center">
+              <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">GAD-7 Anxiety Scale</div>
+              <div class="fw-bold text-dark mt-1" style="font-size: 1.75rem;">{{ assessment.gad7_score|default:"0" }} <span class="text-muted" style="font-size: 1rem;">/ 9</span></div>
+              <div class="badge bg-secondary-subtle text-secondary mt-1">{{ assessment.gad7_severity|default:"Evaluated" }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light text-center">
+              <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Perceived Stress Indicator</div>
+              <div class="fw-bold text-dark mt-1" style="font-size: 1.75rem;">{{ assessment.stress_score|default:"0" }} <span class="text-muted" style="font-size: 1rem;">/ 9</span></div>
+              <div class="badge bg-secondary-subtle text-secondary mt-1">Stress & Burnout Domain</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Radar Chart of 6 Core Domains -->
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-3">6-Domain Symptom Distribution Profile</h6>
+          <div style="height: 320px;">
+            <canvas id="categoryRadarCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- 6 Domain Table Breakdown -->
+        <h6 class="fw-bold text-dark mb-3">Domain-Specific Screening Indicators</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light" style="font-size: 0.8rem;">
+              <tr>
+                <th>Screening Category</th>
+                <th>Raw Score</th>
+                <th>Burden %</th>
+                <th>Indicator Level</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody style="font-size: 0.875rem;">
+              {% for res in results %}
+              <tr>
+                <td>
+                  <strong>{{ res.category.name }}</strong>
+                  {% if res.category.is_developmental %}<span class="badge bg-light text-muted ms-1">Developmental</span>{% endif %}
+                </td>
+                <td>{{ res.raw_score|floatformat:1 }} / {{ res.max_score|floatformat:1 }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                      <div class="progress-bar {% if res.is_elevated %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ res.score_percentage }}%;"></div>
+                    </div>
+                    <span>{{ res.score_percentage }}%</span>
+                  </div>
+                </td>
+                <td>
+                  {% if res.severity_level == 'HIGH' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">High Indicator</span>
+                  {% elif res.severity_level == 'ELEVATED' %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Elevated</span>
+                  {% elif res.severity_level == 'MODERATE' %}
+                  <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Moderate</span>
+                  {% elif res.severity_level == 'MILD' %}
+                  <span class="badge bg-light text-secondary border">Mild</span>
+                  {% else %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Minimal</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if res.is_elevated %}
+                  <span class="text-warning fw-semibold"><i class="fa-solid fa-flag me-1"></i> Requires Review</span>
+                  {% else %}
+                  <span class="text-muted"><i class="fa-solid fa-check me-1"></i> Baseline</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Statutory Non-Diagnostic Disclaimer Box -->
+    <div class="clinical-disclaimer-box mb-4">
+      <div class="d-flex align-items-start gap-2">
+        <i class="fa-solid fa-shield-halved text-primary mt-1"></i>
+        <div>
+          <strong>NON-DIAGNOSTIC NOTICE:</strong>
+          These questionnaire scores are subjective patient-reported screening indicators and do NOT constitute a formal clinical diagnosis. Official diagnoses and treatment decisions can only be made by a licensed psychiatrist or physician following clinical examination.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right Sidebar: Recommendation & AI Status -->
+  <div class="col-lg-4">
+    
+    <div class="mc-card mb-4">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Physician Review Status</h6>
+        <span class="badge bg-light text-secondary border">Care Workflow</span>
+      </div>
+      <div class="mc-card-body p-4">
+        {% if recommendation %}
+          <div class="text-center mb-3">
+            {% if recommendation.status == 'PENDING_APPROVAL' %}
+              <div class="stat-icon amber mx-auto mb-2" style="width: 56px; height: 56px; font-size: 1.75rem;">
+                <i class="fa-solid fa-user-clock"></i>
+              </div>
+              <h5 class="fw-bold text-dark mb-1">Pending Physician Approval</h5>
+              <p class="text-muted" style="font-size: 0.85rem;">
+                AI has generated your personalized guidance. An attending physician is currently evaluating it before clinical release.
+              </p>
+            {% elif recommendation.status == 'APPROVED' or recommendation.status == 'MODIFIED_AND_APPROVED' %}
+              <div class="stat-icon green mx-auto mb-2" style="width: 56px; height: 56px; font-size: 1.75rem;">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </div>
+              <h5 class="fw-bold text-success mb-1">Approved by Physician</h5>
+              <p class="text-muted" style="font-size: 0.85rem;">
+                Authorized by Dr. {{ recommendation.approved_by.user.last_name }}. Ready for your active daily routine!
+              </p>
+              <a href="{% url 'recommendations:patient_view' recommendation.id %}" class="btn btn-mc-primary w-100">
+                <i class="fa-solid fa-eye me-1"></i> View Approved Guidance
+              </a>
+            {% elif recommendation.status == 'FURTHER_ASSESSMENT_REQUIRED' %}
+              <div class="stat-icon blue mx-auto mb-2" style="width: 56px; height: 56px; font-size: 1.75rem;">
+                <i class="fa-solid fa-calendar-plus"></i>
+              </div>
+              <h5 class="fw-bold text-primary mb-1">Additional Assessment Needed</h5>
+              <p class="text-muted" style="font-size: 0.85rem;">
+                The physician has requested a follow-up consultation before issuing recommendations.
+              </p>
+              <a href="{% url 'appointments:request' %}" class="btn btn-mc-secondary w-100">
+                <i class="fa-solid fa-calendar-check me-1"></i> Book Clinical Consultation
+              </a>
+            {% else %}
+              <div class="badge bg-light text-dark border p-2 mb-2">{{ recommendation.get_status_display }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">AI analysis in queue.</p>
+        {% endif %}
+
+        {% if is_physician and recommendation %}
+        <div class="border-top pt-3 mt-3">
+          <small class="text-uppercase fw-bold text-muted d-block mb-2">Physician Action Hub:</small>
+          <a href="{% url 'recommendations:review' recommendation.id %}" class="btn btn-sm btn-mc-primary w-100">
+            <i class="fa-solid fa-stethoscope me-1"></i> Open Physician Review Dashboard
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- AI Clinical Summary Card (Physician/Patient readable) -->
+    {% if ai_analysis %}
+    <div class="mc-card mb-4">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">AI Assessment Summary</h6>
+        <span class="badge bg-light text-secondary border">Non-Diagnostic</span>
+      </div>
+      <div class="mc-card-body p-4" style="font-size: 0.875rem;">
+        <p class="text-secondary" style="line-height: 1.6;">
+          {{ ai_analysis.physician_readable_summary }}
+        </p>
+
+        {% if ai_analysis.frequently_reported_symptoms %}
+        <h6 class="fw-bold text-dark mt-3 mb-2" style="font-size: 0.8rem;">Frequently Reported Symptoms:</h6>
+        <ul class="text-muted ps-3 mb-0" style="font-size: 0.8rem;">
+          {% for s in ai_analysis.frequently_reported_symptoms %}
+          <li>{{ s }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const labels = [
+    {% for res in results %}
+      "{{ res.category.name|truncatechars:15 }}",
+    {% endfor %}
+  ];
+  const data = [
+    {% for res in results %}
+      {{ res.score_percentage }},
+    {% endfor %}
+  ];
+  renderCategoryRadarChart('categoryRadarCanvas', labels, data);
+});
+</script>
+{% endblock %}
+

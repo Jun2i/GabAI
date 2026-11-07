@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Safety Triage - GabAI{% endblock %}
+{% block page_title %}Clinical Safety Emergency Triage & Crisis Management{% endblock %}
+
+{% block content %}
+<!-- Top Emergency Warning Header -->
+<div class="alert alert-danger border-danger p-4 mb-4 shadow-sm">
+  <div class="d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+      <div class="stat-icon red" style="width: 52px; height: 52px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h4 class="fw-bold mb-1 text-danger">Priority Clinical Emergency Protocol</h4>
+        <p class="mb-0 text-dark" style="font-size: 0.9rem;">
+          Patients listed below have reported positive suicidal ideation, intent, or acute inability to guarantee physical safety.
+          <strong>Automated AI responses are bypassed; direct human clinical contact is mandated.</strong>
+        </p>
+      </div>
+    </div>
+    <span class="badge bg-danger text-white px-3 py-2 rounded-pill fs-6">
+      {{ active_cases.count }} Active Crisis Cases
+    </span>
+  </div>
+</div>
+
+<!-- Active Crisis Cases Table -->
+<div class="mc-card mb-4 border-danger">
+  <div class="mc-card-header bg-danger-subtle border-danger d-flex justify-content-between align-items-center">
+    <h5 class="fw-bold mb-0 text-danger">
+      <i class="fa-solid fa-bell-exclamation me-2"></i> Active Emergency Interventions Required
+    </h5>
+    <span class="badge bg-danger text-white">Immediate Response Mandate</span>
+  </div>
+
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light" style="font-size: 0.85rem;">
+          <tr>
+            <th class="ps-4">Patient Name</th>
+            <th>Urgency</th>
+            <th>Triggers Detected</th>
+            <th>Escalated Timestamp</th>
+            <th>Emergency Contact</th>
+            <th class="text-end pe-4">Clinical Action</th>
+          </tr>
+        </thead>
+        <tbody style="font-size: 0.875rem;">
+          {% for case in active_cases %}
+          <tr class="table-danger border-danger">
+            <td class="ps-4">
+              <strong>{{ case.patient.user.get_full_name }}</strong>
+              <div class="text-muted" style="font-size: 0.75rem;">
+                ID #{{ case.patient.id }} &bull; Age {{ case.patient.age|default:"N/A" }} &bull; Ph: {{ case.patient.user.phone_number|default:"No phone" }}
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-danger text-white px-2 py-1">
+                {{ case.get_urgency_level_display }}
+              </span>
+            </td>
+            <td>
+              <span class="text-danger fw-semibold" style="font-size: 0.8rem;">
+                {{ case.safety_triggers_detected|truncatechars:70 }}
+              </span>
+            </td>
+            <td class="text-nowrap text-secondary">{{ case.escalated_at|date:"M d, Y - h:i A" }}</td>
+            <td>
+              {% if case.patient.emergency_contact_name %}
+              <strong>{{ case.patient.emergency_contact_name }}</strong> ({{ case.patient.emergency_contact_relationship }})
+              <div class="text-muted" style="font-size: 0.75rem;">{{ case.patient.emergency_contact_phone }}</div>
+              {% else %}
+              <span class="text-muted">Not provided</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4">
+              <a href="{% url 'safety:detail' case.id %}" class="btn btn-sm btn-danger fw-bold shadow-sm">
+                <i class="fa-solid fa-kit-medical me-1"></i> Manage Case #{{ case.id }}
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-success fw-semibold">
+              <i class="fa-solid fa-circle-check me-1"></i> No active safety emergencies recorded. All past alerts resolved.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Resolved Safety Interventions Table -->
+<div class="mc-card">
+  <div class="mc-card-header d-flex justify-content-between align-items-center">
+    <h6 class="fw-bold mb-0">Resolved Clinical Safety Cases & Documentation</h6>
+    <span class="badge bg-light text-muted border">Historical Audit Log</span>
+  </div>
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Case ID</th>
+            <th>Patient</th>
+            <th>Resolved At</th>
+            <th>Resolved By</th>
+            <th>Resolution Documentation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r_case in resolved_cases %}
+          <tr>
+            <td class="ps-4">#{{ r_case.id }}</td>
+            <td><strong>{{ r_case.patient.user.get_full_name }}</strong></td>
+            <td class="text-muted">{{ r_case.resolved_at|date:"Y-m-d H:i" }}</td>
+            <td>Dr. {{ r_case.resolved_by.user.last_name|default:"Attending Physician" }}</td>
+            <td class="text-truncate" style="max-width: 380px;">{{ r_case.action_taken|default:"Patient contacted and safety confirmed." }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-3 text-muted">No historical resolved cases.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

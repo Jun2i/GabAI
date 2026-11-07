@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Profile & Wellness Preferences - GabAI{% endblock %}
+{% block page_title %}Patient Profile & Routine Configuration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card">
+      <div class="mc-card-header bg-white p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon green" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-user-gear"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1">Personal Profile & Lifestyle Preferences</h4>
+            <div class="text-muted" style="font-size: 0.85rem;">Information used by the AI Scheduler to tailor realistic daily wellness routines</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4 p-md-5">
+        <form method="post" action="{% url 'patients:profile' %}">
+          {% csrf_token %}
+
+          <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size: 0.75rem;">Contact & Identification</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">First Name</label>
+              <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Last Name</label>
+              <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Email Address</label>
+              <input type="email" class="form-control bg-light" value="{{ user.email }}" disabled>
+              <small class="text-muted">Email cannot be changed.</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Mobile Phone Number</label>
+              <input type="text" name="phone_number" class="form-control" value="{{ user.phone_number|default:'' }}">
+            </div>
+          </div>
+
+          <h6 class="text-uppercase fw-bold text-primary mb-3" style="font-size: 0.75rem;">Daily Routine & AI Scheduler Inputs</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Occupation / Academic Status</label>
+              <input type="text" name="occupation" class="form-control" value="{{ patient.occupation|default:'' }}" placeholder="e.g. Software Engineer, College Student, Freelancer">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Work or School Schedule</label>
+              <input type="text" name="work_or_school_schedule" class="form-control" value="{{ patient.work_or_school_schedule|default:'' }}" placeholder="e.g. 9:00 AM - 5:00 PM weekdays, irregular shifts">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Available Free Time per Day</label>
+              <input type="text" name="available_free_time" class="form-control" value="{{ patient.available_free_time|default:'' }}" placeholder="e.g. 1-2 hours evenings and weekends">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Personal Interests & Hobbies</label>
+              <input type="text" name="personal_interests" class="form-control" value="{{ patient.personal_interests|default:'' }}" placeholder="e.g. Walking, reading, cycling, drawing, gaming">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Sensory & Personal Preferences</label>
+              <textarea name="patient_preferences" rows="3" class="form-control" placeholder="e.g. Prefer quiet environments, prefer visual task lists, sensitive to sudden changes in routine...">{{ patient.patient_preferences|default:'' }}</textarea>
+            </div>
+          </div>
+
+          <h6 class="text-uppercase fw-bold text-danger mb-3" style="font-size: 0.75rem;">Emergency Safety Contact</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Contact Name</label>
+              <input type="text" name="emergency_contact_name" class="form-control" value="{{ patient.emergency_contact_name|default:'' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Contact Phone</label>
+              <input type="text" name="emergency_contact_phone" class="form-control" value="{{ patient.emergency_contact_phone|default:'' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Relationship</label>
+              <input type="text" name="emergency_contact_relationship" class="form-control" value="{{ patient.emergency_contact_relationship|default:'' }}">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'patients:dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+            <button type="submit" class="btn btn-mc-primary px-4 py-2">
+              <i class="fa-solid fa-floppy-disk me-2"></i> Save Changes
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

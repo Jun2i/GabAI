@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - GabAI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="col-md-9 col-lg-7 col-xl-6">
+    <div class="mc-card shadow-lg border-0">
+      <div class="mc-card-body p-4 p-md-5">
+        
+        <div class="text-center mb-4">
+          <img src="/static/img/logo.png" alt="GabAI Logo" class="mx-auto mb-3 d-block" style="height: 90px; width: 90px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(45, 122, 94, 0.15));">
+          <h3 class="fw-bold text-dark mb-1">Welcome to GabAI</h3>
+          <p class="text-muted" style="font-size: 0.9rem;">
+            An AI-Driven Platform for Mental Health Monitoring and Personalized Recommendation System
+          </p>
+        </div>
+
+        <form method="post" action="{% url 'accounts:login' %}" id="loginForm">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2" role="alert">
+            {% for error in form.non_field_errors %}
+              <div style="font-size: 0.85rem;"><i class="fa-solid fa-circle-exclamation me-1"></i> {{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Username or Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
+              {{ form.username }}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+              {{ form.password }}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-mc-primary w-100 py-2 mb-3">
+            <i class="fa-solid fa-right-to-bracket me-2"></i> Secure Sign In
+          </button>
+        </form>
+
+        <!-- Quick Demo Credentials Selector -->
+        <div class="border-top pt-3 mt-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Quick Fill Demo Profiles:</small>
+            <span class="badge bg-light text-secondary border">One-Click Testing</span>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-success w-100 text-truncate text-start" onclick="fillLogin('dr.santos', 'DoctorPass123!')">
+                <i class="fa-solid fa-user-doctor me-1"></i> Dr. Santos (MD)
+              </button>
+            </div>
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-primary w-100 text-truncate text-start" onclick="fillLogin('patient.juan', 'PatientPass123!')">
+                <i class="fa-solid fa-user me-1"></i> Patient Juan (Anxiety)
+              </button>
+            </div>
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-info w-100 text-truncate text-start" onclick="fillLogin('patient.ana', 'PatientPass123!')">
+                <i class="fa-solid fa-seedling me-1"></i> Patient Ana (Wellness)
+              </button>
+            </div>
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-warning w-100 text-truncate text-start" onclick="fillLogin('patient.carlos', 'PatientPass123!')">
+                <i class="fa-solid fa-clock me-1"></i> Carlos (Pending Rec)
+              </button>
+            </div>
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-danger w-100 text-truncate text-start" onclick="fillLogin('patient.elena', 'PatientPass123!')">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Elena (Safety Alert)
+              </button>
+            </div>
+            <div class="col-6 col-md-4">
+              <button type="button" class="btn btn-sm btn-outline-dark w-100 text-truncate text-start" onclick="fillLogin('admin', 'AdminPass123!')">
+                <i class="fa-solid fa-shield me-1"></i> Administrator
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-4 pt-3 border-top">
+          <p class="text-muted mb-2" style="font-size: 0.85rem;">Don't have an account yet?</p>
+          <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'accounts:register_patient' %}" class="btn btn-sm btn-mc-outline-green">
+              <i class="fa-solid fa-user-plus me-1"></i> Register as Patient
+            </a>
+            <a href="{% url 'accounts:register_physician' %}" class="btn btn-sm btn-outline-secondary">
+              <i class="fa-solid fa-stethoscope me-1"></i> Join as Physician
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fillLogin(username, password) {
+  const uInput = document.querySelector('input[name="username"]');
+  const pInput = document.querySelector('input[name="password"]');
+  const form = document.getElementById('loginForm');
+  if (uInput && pInput && form) {
+    uInput.value = username;
+    pInput.value = password;
+    form.submit();
+  }
+}
+</script>
+{% endblock %}
+

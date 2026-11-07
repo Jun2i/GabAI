@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Physician Clinical Dashboard - GabAI{% endblock %}
+{% block page_title %}Physician & Psychiatrist Clinical Hub{% endblock %}
+
+{% block content %}
+<!-- KPI Stats Bar -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Awaiting Recommendation Review</div>
+        <div class="stat-number text-primary">{{ recommendations_awaiting }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">AI generated &bull; Pending sign-off</small>
+      </div>
+      <div class="stat-icon blue">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold text-danger" style="font-size: 0.8rem;">Priority Safety Attention</div>
+        <div class="stat-number text-danger">{{ safety_alerts_active }}</div>
+        <small class="text-danger" style="font-size: 0.725rem;">Active crisis alerts</small>
+      </div>
+      <div class="stat-icon red">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Upcoming Appointments</div>
+        <div class="stat-number text-success">{{ upcoming_appointments }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">Scheduled consultations</small>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-widget">
+      <div>
+        <div class="text-muted fw-semibold" style="font-size: 0.8rem;">Total Registered Patients</div>
+        <div class="stat-number text-dark">{{ total_patients }}</div>
+        <small class="text-secondary" style="font-size: 0.725rem;">{{ completed_evaluations }} evaluations recorded</small>
+      </div>
+      <div class="stat-icon green">
+        <i class="fa-solid fa-users"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Urgent Safety Triage Quick Alert if active -->
+{% if urgent_safety_cases %}
+<div class="alert alert-danger border-danger mb-4 shadow-sm">
+  <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-bell-exclamation fa-beat text-danger fa-lg"></i>
+      <strong>URGENT CLINICAL SAFETY CASES ({{ urgent_safety_cases.count }}):</strong>
+      <span>Patients reporting acute crisis or suicidal intent require immediate review.</span>
+    </div>
+    <a href="{% url 'safety:management' %}" class="btn btn-sm btn-danger fw-bold">
+      View Emergency Triage
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Filters & Search Toolbar -->
+<div class="mc-card mb-4">
+  <div class="mc-card-body p-3">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Search patient name or ID..." value="{{ current_filters.q|default:'' }}">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Recommendation Statuses</option>
+          <option value="PENDING_APPROVAL" {% if current_filters.status == 'PENDING_APPROVAL' %}selected{% endif %}>Pending Physician Approval</option>
+          <option value="APPROVED" {% if current_filters.status == 'APPROVED' %}selected{% endif %}>Approved by Physician</option>
+          <option value="MODIFIED_AND_APPROVED" {% if current_filters.status == 'MODIFIED_AND_APPROVED' %}selected{% endif %}>Modified & Approved</option>
+          <option value="REJECTED" {% if current_filters.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+          <option value="FURTHER_ASSESSMENT_REQUIRED" {% if current_filters.status == 'FURTHER_ASSESSMENT_REQUIRED' %}selected{% endif %}>Further Assessment Required</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <input type="date" name="date" class="form-control form-control-sm" value="{{ current_filters.date|default:'' }}" title="Filter by Assessment Date">
+      </div>
+      <div class="col-md-3">
+        <select name="physician" class="form-select form-select-sm">
+          <option value="">All Assigned Physicians</option>
+          {% for p in physicians %}
+          <option value="{{ p.id }}" {% if current_filters.physician == p.id|stringformat:"s" %}selected{% endif %}>
+            Dr. {{ p.user.get_full_name }} ({{ p.specialization|truncatechars:20 }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button type="submit" class="btn btn-sm btn-mc-primary w-100">
+          <i class="fa-solid fa-filter me-1"></i> Filter
+        </button>
+        <a href="{% url 'physicians:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
+          <i class="fa-solid fa-rotate-left"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Demonstration Dataset Notice -->
+<div class="alert alert-info border-info-subtle mb-4 d-flex align-items-center justify-content-between p-3 shadow-sm">
+  <div class="d-flex align-items-center gap-2">
+    <i class="fa-solid fa-flask-vial text-info fa-lg"></i>
+    <div style="font-size: 0.875rem;">
+      <strong>Demonstration Dataset:</strong> Displaying <strong>{{ total_records_count }}</strong> simulated patient assessment records and <strong>15</strong> licensed physician profiles for clinical testing. All indicators are preliminary and require authorized human review.
+    </div>
+  </div>
+  <span class="badge bg-info text-white text-nowrap">Simulated Demo Data</span>
+</div>
+
+<!-- AI Recommendations Review Queue Table -->
+<div class="mc-card mb-4 shadow-sm">
+  <div class="mc-card-header d-flex justify-content-between align-items-center p-3">
+    <div>
+      <h5 class="fw-bold mb-0 text-dark">Clinical Assessment &amp; AI Recommendation Hub</h5>
+      <div class="text-muted" style="font-size: 0.8rem;">Preliminary screening indicators &bull; Mandatory physician review and sign-off before patient release</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-light text-secondary border">Showing {{ recommendations.start_index }}-{{ recommendations.end_index }} of {{ paginator.count }}</span>
+    </div>
+  </div>
+
+  <div class="mc-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3 py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 110px;">Patient ID</th>
+            <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Patient Name</th>
+            <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 60px;">Age</th>
+            <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 120px;">Assessment Date</th>
+            <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Assessment Result</th>
+            <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 130px;">Risk / Indicator Level</th>
+            <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">AI Recommendation</th>
+            <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 150px;">Physician Review Status</th>
+            <th class="pe-3 py-3 text-secondary text-uppercase text-end" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 130px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in recommendations %}
+          <tr class="{% if rec.status == 'PENDING_APPROVAL' %}table-warning table-opacity-10{% elif rec.risk_code == 'CRITICAL' %}table-danger table-opacity-10{% endif %}">
+            <!-- 1. Patient ID -->
+            <td class="ps-3 py-3">
+              <code class="fw-semibold text-dark">GAB-{{ rec.patient.id|stringformat:"04d" }}</code>
+            </td>
+
+            <!-- 2. Patient Name -->
+            <td class="py-3">
+              <div class="d-flex align-items-center gap-1">
+                <strong>{{ rec.patient.user.get_full_name }}</strong>
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;" title="Simulated Dummy Record">Demo</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.725rem;">{{ rec.patient.occupation|default:"Patient" }}</div>
+            </td>
+
+            <!-- 3. Age -->
+            <td class="py-3 text-center">
+              <span class="badge bg-light text-dark border">{{ rec.patient.age|default:"N/A" }}</span>
+            </td>
+
+            <!-- 4. Assessment Date -->
+            <td class="py-3 text-muted text-nowrap">
+              {{ rec.assessment.created_at|date:"M d, Y" }}
+            </td>
+
+            <!-- 5. Assessment Result -->
+            <td class="py-3">
+              <div class="fw-medium text-dark" style="font-size: 0.8rem;">
+                {{ rec.assessment_result_summary }}
+              </div>
+              <div class="text-secondary" style="font-size: 0.72rem;">
+                GAD: <strong>{{ rec.assessment.gad7_score|default:"0" }}</strong> &bull; PHQ: <strong>{{ rec.assessment.phq9_score|default:"0" }}</strong> &bull; Stress: <strong>{{ rec.assessment.stress_score|default:"0" }}</strong>
+              </div>
+            </td>
+
+            <!-- 6. Risk / Indicator Level -->
+            <td class="py-3 text-center">
+              <span class="badge {{ rec.risk_badge_class }} px-2 py-1 text-nowrap" style="font-size: 0.75rem;">
+                {% if rec.risk_code == 'CRITICAL' %}
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                {% endif %}
+                {{ rec.risk_label }}
+              </span>
+            </td>
+
+            <!-- 7. AI Recommendation -->
+            <td class="py-3">
+              <span class="badge {% if rec.pathway == 'PATHWAY_B' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} text-wrap" style="font-size: 0.75rem;">
+                {{ rec.get_pathway_display }}
+              </span>
+            </td>
+
+            <!-- 8. Physician Review Status -->
+            <td class="py-3 text-center">
+              <span class="badge {% if rec.status == 'PENDING_APPROVAL' %}badge-status-pending{% elif rec.status == 'APPROVED' %}badge-status-approved{% elif rec.status == 'MODIFIED_AND_APPROVED' %}badge-status-modified{% elif rec.status == 'REJECTED' %}badge-status-rejected{% else %}badge-status-hold{% endif %} text-nowrap">
+                {{ rec.get_status_display }}
+              </span>
+            </td>
+
+            <!-- 9. Actions (View Details) -->
+            <td class="pe-3 py-3 text-end text-nowrap">
+              <a href="{% url 'recommendations:review' rec.id %}" class="btn btn-sm {% if rec.status == 'PENDING_APPROVAL' %}btn-mc-primary fw-bold shadow-sm{% else %}btn-outline-primary{% endif %}" title="View Details and Review Care Plan">
+                <i class="fa-solid fa-stethoscope me-1"></i> View Details
+              </a>
+              <a href="{% url 'physicians:patient_detail' rec.patient.id %}" class="btn btn-sm btn-outline-secondary" title="View Patient Medical Chart">
+                <i class="fa-solid fa-file-waveform"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="fa-regular fa-folder-open fa-2x mb-2 d-block"></i>
+              No patient assessment records match the current filter criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Clean Pagination Footer Controls -->
+    {% if paginator.num_pages > 1 %}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top bg-light">
+      <div class="text-muted mb-2 mb-md-0" style="font-size: 0.8rem;">
+        Showing page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong> &bull; Total <strong>{{ paginator.count }}</strong> records
+      </div>
+      <nav aria-label="Table pagination">
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.date %}&date={{ current_filters.date }}{% endif %}{% if current_filters.physician %}&physician={{ current_filters.physician }}{% endif %}" aria-label="First">
+              <i class="fa-solid fa-angles-left"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.date %}&date={{ current_filters.date }}{% endif %}{% if current_filters.physician %}&physician={{ current_filters.physician }}{% endif %}">
+              <i class="fa-solid fa-angle-left"></i> Previous
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-angle-left"></i> Previous</span></li>
+          {% endif %}
+
+          {% for p in paginator.page_range %}
+            {% if p == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+            {% elif p > page_obj.number|add:-3 and p < page_obj.number|add:3 %}
+            <li class="page-item"><a class="page-link" href="?page={{ p }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.date %}&date={{ current_filters.date }}{% endif %}{% if current_filters.physician %}&physician={{ current_filters.physician }}{% endif %}">{{ p }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.date %}&date={{ current_filters.date }}{% endif %}{% if current_filters.physician %}&physician={{ current_filters.physician }}{% endif %}">
+              Next <i class="fa-solid fa-angle-right"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ paginator.num_pages }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}{% if current_filters.date %}&date={{ current_filters.date }}{% endif %}{% if current_filters.physician %}&physician={{ current_filters.physician }}{% endif %}" aria-label="Last">
+              <i class="fa-solid fa-angles-right"></i>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">Next <i class="fa-solid fa-angle-right"></i></span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

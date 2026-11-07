@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+class PhysiciansConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.physicians'
+    verbose_name = 'Physician & Clinical Management'
+

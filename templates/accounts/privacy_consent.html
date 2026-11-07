@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Data Privacy Consent & Clinical Notice - GabAI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card">
+      <div class="mc-card-header bg-white border-bottom p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon green" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1">Philippine Data Privacy Consent & Clinical Notice</h4>
+            <div class="text-muted" style="font-size: 0.85rem;">Republic Act No. 10173 (Data Privacy Act of 2012) Compliance</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4 p-md-5">
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
+          <i class="fa-solid fa-circle-info mt-1 text-primary"></i>
+          <div style="font-size: 0.875rem;">
+            Before participating in mental health screenings and utilizing AI-assisted wellness recommendations, please review your legal rights and our clinical safety standards.
+          </div>
+        </div>
+
+        <div class="border rounded p-3 mb-4 bg-light" style="max-height: 280px; overflow-y: auto; font-size: 0.875rem; line-height: 1.6;">
+          <h6 class="fw-bold text-dark">1. Collection and Processing of Health Information</h6>
+          <p class="text-muted">
+            GabAI collects subjective questionnaire responses concerning psychological wellness, daily routines, stress markers, and developmental traits. In compliance with the Philippine Data Privacy Act of 2012 (RA 10173) and the National Privacy Commission (NPC) regulations, your sensitive personal information is strictly protected through role-based access control, encrypted channels, and confidential clinical record boundaries.
+          </p>
+
+          <h6 class="fw-bold text-dark">2. Artificial Intelligence Clinical Boundaries</h6>
+          <p class="text-muted">
+            The Artificial Intelligence component functions exclusively as an analytical aid for licensed physicians and psychiatrists. <strong>AI DOES NOT:</strong>
+          </p>
+          <ul class="text-muted ps-3">
+            <li>Diagnose psychiatric illnesses or medical conditions.</li>
+            <li>Prescribe medications or clinical treatment regimes.</li>
+            <li>Release clinical guidance to you without review and authorization by an attending physician.</li>
+            <li>Override immediate crisis or suicide prevention safety protocols.</li>
+          </ul>
+
+          <h6 class="fw-bold text-dark">3. Emergency Crisis Protocols</h6>
+          <p class="text-muted">
+            If you indicate immediate self-harm risk or crisis during an assessment, our system will immediately provide 24/7 human emergency helpline contacts (including the National Center for Mental Health Crisis Hotline 1553) and dispatch an urgent triage notification to our clinical safety team.
+          </p>
+
+          <h6 class="fw-bold text-dark">4. Rights of the Data Subject</h6>
+          <p class="text-muted mb-0">
+            You hold the right to be informed, access your clinical records, rectify erroneous data, and request consultation with an attending medical specialist at any time regardless of screening score.
+          </p>
+        </div>
+
+        <form method="post" action="{% url 'accounts:privacy_consent' %}">
+          {% csrf_token %}
+          <div class="form-check p-3 border rounded mb-4 bg-white shadow-sm">
+            <input class="form-check-input ms-0 me-3" type="checkbox" name="consent_agreed" id="consentCheck" required style="width: 20px; height: 20px;">
+            <label class="form-check-label text-dark fw-semibold" for="consentCheck" style="font-size: 0.9rem;">
+              I have read, understood, and voluntarily agree to the processing of my mental health screening information in accordance with RA 10173, and I understand that AI recommendations require physician approval before clinical release.
+            </label>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'accounts:logout' %}" class="btn btn-outline-secondary">
+              <i class="fa-solid fa-arrow-left me-1"></i> Decline & Logout
+            </a>
+            <button type="submit" class="btn btn-mc-primary px-4 py-2">
+              <i class="fa-solid fa-check me-2"></i> Confirm Consent & Continue
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

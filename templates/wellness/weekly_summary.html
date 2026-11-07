@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Wellness Engagement Review - {{ patient.user.get_full_name }} - GabAI{% endblock %}
+{% block page_title %}Patient Wellness Engagement & Activity Summary{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="fw-bold mb-0">Wellness Engagement: {{ patient.user.get_full_name }}</h4>
+        <div class="text-muted" style="font-size: 0.85rem;">
+          Clinical review of habit formation, completion percentages, and routine compliance
+        </div>
+      </div>
+      <a href="{% url 'physicians:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-1"></i> Return to Patient Chart
+      </a>
+    </div>
+
+    <!-- Recent Activity Progress Logs -->
+    <div class="mc-card mb-4">
+      <div class="mc-card-header">
+        <h6 class="fw-bold mb-0">Recent Activity Logs</h6>
+        <span class="badge bg-light text-muted border">Latest 30 Activities</span>
+      </div>
+      <div class="mc-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Date</th>
+                <th>Activity Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Patient Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for act in recent_activities %}
+              <tr>
+                <td class="ps-4 text-nowrap text-muted">{{ act.scheduled_date|date:"M d, Y" }} {{ act.start_time|time:"h:i A" }}</td>
+                <td><strong>{{ act.title }}</strong></td>
+                <td><span class="badge bg-light text-secondary border">{{ act.get_category_display }}</span></td>
+                <td>
+                  <span class="badge {% if act.status == 'COMPLETED' %}bg-success{% elif act.status == 'SKIPPED' %}bg-secondary{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                    {{ act.get_status_display }}
+                  </span>
+                </td>
+                <td class="text-muted">{{ act.patient_notes|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No activity records recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

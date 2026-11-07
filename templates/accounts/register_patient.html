@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Registration - GabAI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card">
+      <div class="mc-card-header p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon green" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1">Patient Account Registration</h4>
+            <div class="text-muted" style="font-size: 0.85rem;">Begin your mental health assessment and personalized wellness journey</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4 p-md-5">
+        <form method="post" action="{% url 'accounts:register_patient' %}">
+          {% csrf_token %}
+
+          {% if form.errors %}
+          <div class="alert alert-danger" role="alert">
+            Please correct the errors in the fields below.
+          </div>
+          {% endif %}
+
+          <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size: 0.75rem;">Account Credentials</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">First Name *</label>
+              {{ form.first_name }}
+              {{ form.first_name.errors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Last Name *</label>
+              {{ form.last_name }}
+              {{ form.last_name.errors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Username *</label>
+              {{ form.username }}
+              {{ form.username.errors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Email Address *</label>
+              {{ form.email }}
+              {{ form.email.errors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Password * (Min. 8 characters)</label>
+              {{ form.password }}
+              {{ form.password.errors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Confirm Password *</label>
+              {{ form.confirm_password }}
+              {{ form.confirm_password.errors }}
+            </div>
+          </div>
+
+          <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size: 0.75rem;">Demographic Profile</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Date of Birth *</label>
+              {{ form.date_of_birth }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Gender</label>
+              {{ form.gender }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Contact Number</label>
+              {{ form.phone_number }}
+            </div>
+          </div>
+
+          <h6 class="text-uppercase fw-bold text-danger mb-3" style="font-size: 0.75rem;">Emergency Contact (Required for Patient Safety Protocol)</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Emergency Contact Name *</label>
+              {{ form.emergency_contact_name }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Emergency Phone *</label>
+              {{ form.emergency_contact_phone }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" style="font-size: 0.85rem;">Relationship *</label>
+              {{ form.emergency_contact_relationship }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline-secondary">
+              Already have an account? Sign In
+            </a>
+            <button type="submit" class="btn btn-mc-primary px-4 py-2">
+              <i class="fa-solid fa-arrow-right me-2"></i> Register & Continue
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

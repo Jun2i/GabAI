@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Request Appointment - GabAI{% endblock %}
+{% block page_title %}Schedule Consultation with Physician{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card">
+      <div class="mc-card-header bg-white p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon green" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1">Schedule Consultation or Follow-up</h4>
+            <div class="text-muted" style="font-size: 0.85rem;">Connect directly with a verified psychiatrist or clinical specialist</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4 p-md-5">
+        <form method="post" action="{% url 'appointments:request' %}">
+          {% csrf_token %}
+
+          {% if not request.user.is_patient and patients %}
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Select Patient (Staff Booking)</label>
+            <select name="patient_id" class="form-select" required>
+              {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.user.get_full_name }} (ID #{{ p.id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Select Attending Physician / Psychiatrist *</label>
+            <select name="physician_id" class="form-select" required>
+              {% for d in physicians %}
+              <option value="{{ d.id }}">Dr. {{ d.user.get_full_name }} &bull; {{ d.specialization }} ({{ d.hospital_affiliation }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark">Consultation Type *</label>
+              <select name="appointment_type" class="form-select">
+                <option value="INITIAL_EVALUATION">Initial Psychiatric / Psychological Evaluation</option>
+                <option value="FOLLOW_UP">Follow-up Consultation</option>
+                <option value="CLINICAL_INTERVIEW">Clinical Interview for Further Assessment</option>
+                <option value="WELLNESS_CHECK">Preventive Wellness Check-in</option>
+                <option value="URGENT_SAFETY">Priority Clinical Safety Evaluation</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark">Consultation Mode *</label>
+              <select name="consultation_mode" class="form-select">
+                <option value="IN_PERSON">In-Person (Clinic Consultation)</option>
+                <option value="TELEHEALTH">Secure Telehealth Video Call</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark">Preferred Date *</label>
+              <input type="date" name="appointment_date" class="form-control" min="{{ min_date }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark">Preferred Time *</label>
+              <input type="time" name="start_time" class="form-control" value="09:30" required>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark">Reason for Visit / Specific Concerns *</label>
+            <textarea name="reason_for_visit" rows="3" class="form-control" placeholder="Briefly describe your symptoms, goals, or concerns for this consultation..." required></textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'appointments:list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-mc-primary px-4 py-2">
+              <i class="fa-solid fa-calendar-check me-2"></i> Submit Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

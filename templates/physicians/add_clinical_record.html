@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Record Clinical Findings - {{ patient.user.get_full_name }} - GabAI{% endblock %}
+{% block page_title %}Document Clinical Findings & Physician Diagnosis{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mc-card">
+      <div class="mc-card-header bg-white p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon green" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-file-medical"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1">Clinical Evaluation & Diagnostic Record</h4>
+            <div class="text-muted" style="font-size: 0.85rem;">
+              Patient: <strong>{{ patient.user.get_full_name }}</strong> (Age {{ patient.age|default:"N/A" }}) &bull; Attending: Dr. {{ request.user.get_full_name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-card-body p-4 p-md-5">
+        
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-4" style="font-size: 0.85rem;">
+          <i class="fa-solid fa-circle-info fa-lg text-primary"></i>
+          <div>
+            Clinical findings and official diagnoses are reserved exclusively for licensed medical practitioners. AI recommendations serve as assistive screening aids only.
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'physicians:add_clinical_record' patient.id %}">
+          {% csrf_token %}
+
+          {% if assessments %}
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Link to Screening Assessment (Optional)</label>
+            <select name="assessment_id" class="form-select">
+              <option value="">No linked assessment</option>
+              {% for a in assessments %}
+              <option value="{{ a.id }}">Assessment #{{ a.id }} ({{ a.created_at|date:"M d, Y" }} &bull; PHQ-9: {{ a.phq9_score|default:"-" }}, GAD-7: {{ a.gad7_score|default:"-" }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Clinical Findings & Mental Status Observations *</label>
+            <textarea name="clinical_findings" rows="4" class="form-control" placeholder="Detailed clinical evaluation, affect, thought process, cognitive presentation, and objective findings..." required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Official Clinical Diagnosis (ICD-11 / DSM-5 Aligned)</label>
+            <input type="text" name="clinical_diagnosis" class="form-control" placeholder="e.g. Generalized Anxiety Disorder (F41.1), Major Depressive Episode (Mild/Moderate)...">
+            <small class="text-muted">Made exclusively by the attending licensed psychiatrist/physician.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Authorized Treatment & Intervention Plan</label>
+            <textarea name="treatment_plan" rows="3" class="form-control" placeholder="Physician-directed clinical treatment plan, psychotherapy referrals, lifestyle modifications, or medical oversight..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark">Follow-Up Instructions for Patient</label>
+            <textarea name="follow_up_instructions" rows="2" class="form-control" placeholder="Instructions released directly to the patient..."></textarea>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary">
+              <i class="fa-solid fa-lock me-1"></i> Internal Confidential Clinical Notes (Clinical Team Only)
+            </label>
+            <textarea name="confidential_notes" rows="2" class="form-control" placeholder="Sensitive clinical observations not visible on patient portal..."></textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{% url 'physicians:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+            <button type="submit" class="btn btn-mc-primary px-4 py-2">
+              <i class="fa-solid fa-floppy-disk me-2"></i> Save Clinical Record
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
